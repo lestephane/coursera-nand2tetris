@@ -1,0 +1,41 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/01/DMux8Way.hdl
+
+/**
+ * 8-way demultiplexor:
+ * {a, b, c, d, e, f, g, h} = {in, 0, 0, 0, 0, 0, 0, 0} if sel == 000
+ *                            {0, in, 0, 0, 0, 0, 0, 0} if sel == 001
+ *                            etc.
+ *                            {0, 0, 0, 0, 0, 0, 0, in} if sel == 111
+ */
+
+CHIP DMux8Way {
+    IN in, sel[3];
+    OUT a, b, c, d, e, f, g, h;
+
+    PARTS:
+    // known parts so far:
+    //  Nand, Not, And, Or, Xor, Mux, Dmux,
+    //  Not16, And16, Or16, Mux16, Or8Way,
+    //  Mux4Way16, Mux8Way16
+    //  DMux4Way
+    
+    // Put your code here:
+    DMux4Way(in=in, sel=sel[0..1], a=dmuxa, b=dmuxb, c=dmuxc, d=dmuxd);
+    DMux4Way(in=in, sel=sel[0..1], a=dmuxe, b=dmuxf, c=dmuxg, d=dmuxh);
+    
+    Not(in=sel[2], out=selabcd);
+    And(a=sel[2], b=sel[2], out=selefgh);
+
+    And(a=selabcd, b=dmuxa, out=a);
+    And(a=selabcd, b=dmuxb, out=b);
+    And(a=selabcd, b=dmuxc, out=c);
+    And(a=selabcd, b=dmuxd, out=d);
+    
+    And(a=selefgh, b=dmuxe, out=e);
+    And(a=selefgh, b=dmuxf, out=f);
+    And(a=selefgh, b=dmuxg, out=g);
+    And(a=selefgh, b=dmuxh, out=h);
+}

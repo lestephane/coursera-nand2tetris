@@ -1,0 +1,137 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/05/CPU.hdl
+
+/**
+ * The Hack CPU (Central Processing unit), consisting of an ALU,
+ * two registers named A and D, and a program counter named PC.
+ * The CPU is designed to fetch and execute instructions written in 
+ * the Hack machine language. In particular, functions as follows:
+ * Executes the inputted instruction according to the Hack machine 
+ * language specification. The D and A in the language specification
+ * refer to CPU-resident registers, while M refers to the external
+ * memory location addressed by A, i.e. to Memory[A]. The inM input 
+ * holds the value of this location. If the current instruction needs 
+ * to write a value to M, the value is placed in outM, the address 
+ * of the target location is placed in the addressM output, and the 
+ * writeM control bit is asserted. (When writeM==0, any value may 
+ * appear in outM). The outM and writeM outputs are combinational: 
+ * they are affected instantaneously by the execution of the current 
+ * instruction. The addressM and pc outputs are clocked: although they 
+ * are affected by the execution of the current instruction, they commit 
+ * to their new values only in the next time step. If reset==1 then the 
+ * CPU jumps to address 0 (i.e. pc is set to 0 in next time step) rather 
+ * than to the address resulting from executing the current instruction. 
+ */
+
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to re-start the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // address of next instruction
+
+    PARTS:
+    // How I did it
+    // - add DRegister first so tests can run (and fail on first line)
+    // - add ALU with all inputs except for X set to false
+    //      -> Comparison failure at line 3 (addre and pc don't match)
+    // - add PC with inc = true, all else is false, out goes straight to pc pin
+    //      -> Comparison failure at line 3 (addre differs)
+    // - Connect instruction pin to ARegister, ARegister to PC,
+    //   and make load contingent on an A-instruction (instruction[15]=false)
+    // - Connect ARegister output to addressM
+    //      -> Comparison failure at line 3 (DRegiste not loaded with A)
+    // - Decode next instruction
+    //      1110110000010000
+    //      a=0
+    //      comp=110000 (A)
+    //      dest=010    (D)
+    //      jump=000    (null   , no jump)
+    // - Connect ARegister to M/A input of ALU (no mux in between to start with)
+    // - Set ALU zx to 1, f to 1 (x + y), all others to zero
+    // - Assign d1 d2 d3 to separate control pins
+    // - Use d2 control ping as load for DRegister
+    //      -> Comparison failure at line 8 (needs to compute A-D)
+    // - Create aliases for each individual bit in instruction (c1-c6...)
+    // - Wire c1-c6 bits to ALU control bits
+    //      -> Comparison failure at line 12 (writeM is always zero)
+    // - Combine cinst + d3 to determine writeM
+    //      -> Comparison failure at line 20 (DRegister should be D=D-M=-1)
+    // - Wire Mux16(inM,aregOut) to ALU Y input 
+    //      -> Comparison failure at line 25 (PC should be 14 due to "D;jlt")
+    // - Wire j1 (out < 0) AND alu ng (out < 0) to PC load
+    //      -> Comparison failure at line 29 (addressM should 1000 due to "A = A + 1")
+    // - Mux alu out AND instruction (controlled by d1) to ARegister 
+    //      -> Comparison failure at line 32 (DRegister should be -1)
+    // - Compute dregLoad from AND(cinst, d2)
+    //      -> Comparison failure at line 35 (pc should be 21, because of "D+1;jeq", jeq is not supported)
+    // - Wire j2 (out = 0) and alu zr out to PC load
+    //      -> Comparison failure at line 77 (pc should be 1000, because of "D;JGT")
+    // - Wired j3 (out > 0) and not(zr,ng) to PC load
+    //      -> Comparison failure at line 91 (pc should be 0, because reset = 1)
+
+    // ainst = 1 if we're dealing with an A-Instruction
+    Not(in=instruction[15], out=ainst);
+    // cinst = 1 if we're dealing with a C-Instruction
+    And(a=true, b=instruction[15], out=cinst);
+
+    // Add mnemonics to more easily refer to bits in the instruction
+    And(a=true, b=instruction[12], out=a);  // a = 0 means we're using A in the compute field, M otherwise
+    And(a=true, b=instruction[11], out=c1); // ALU -> zx
+    And(a=true, b=instruction[10], out=c2); // ALU -> nx
+    And(a=true, b=instruction[9], out=c3);  // ALU -> zy
+    And(a=true, b=instruction[8], out=c4);  // ALU -> ny
+    And(a=true, b=instruction[7], out=c5);  // ALU -> f
+    And(a=true, b=instruction[6], out=c6);  // ALU -> no
+    And(a=true, b=instruction[5], out=d1);  // dest: ARegister
+    And(a=true, b=instruction[4], out=d2);  // dest: DRegister
+    And(a=true, b=instruction[3], out=d3);  // dest: M
+    And(a=true, b=instruction[2], out=j1);  // dest: M
+    And(a=true, b=instruction[1], out=j2);  // dest: M
+    And(a=true, b=instruction[0], out=j3);  // dest: M
+
+    // If we're in C-Instruction mode, and dest is M, set writeM
+    And(a=cinst, b=d3, out=writeM);
+
+    // Put your code here:
+    ARegister(in=aregIn, load=aregLoad, out=aregOut, out[0..14]=addressM);
+    DRegister(in=aluOut, load=dregLoad, out=aluX);
+    ALU(x=aluX, y=aluY, zx=c1, nx=c2, zy=c3, ny=c4, f=c5, no=c6, out=aluOut, out=outM, zr=aluZrOut, ng=aluNgOut);
+    PC(in=aregOut, load=pcLoad, inc=true, reset=reset, out[0..14]=pc);
+
+    // if a = 0, take ALU y input from inM
+    Mux16(a=aregOut, b=inM, sel=a, out=aluY);
+
+    // We should load a new value in ARegister when
+    // - (we're dealing with a C-instruction AND
+    // - the C-instruction bit d1 (dest = A) is set) OR
+    // - we're dealing with an A-Instruction
+    And(a=cinst, b=d1, out=aregDest);
+    Or(a=aregDest, b=ainst, out=aregLoad);
+    Mux16(a=instruction, b=aluOut, sel=aregDest, out=aregIn);
+
+    // We should load a new value in DRegister when
+    // - we're dealing with a C-instruction AND
+    // - the C-instruction bit d2 (dest = D) is set
+    And(a=cinst, b=d2, out=dregLoad);
+
+    // Support JLT,JEQ, JGT jumps
+    Or(a=aluNgOut, b=aluZrOut, out=aluNgOrZrOut);
+    Not(in=aluNgOrZrOut, out=notAluNgOrZrOut);
+
+    And(a=j1, b=aluNgOut,           out=ltJumpOut);
+    And(a=j2, b=aluZrOut,           out=eqJumpOut);
+    And(a=j3, b=notAluNgOrZrOut,    out=gtJumpOut);
+
+    Or(a=ltJumpOut, b=eqJumpOut, out=pcLoadTmp);
+    Or(a=pcLoadTmp, b=gtJumpOut, out=pcLoadTmp2);
+    And(a=cinst, b=pcLoadTmp2, out=pcLoad);
+}
