@@ -24,6 +24,12 @@ public class HackAssemblerTest {
     }
 
     @Test
+    public void commentAfterInstruction() {
+        GivenSourceCode("@1 // comment")
+                .ThenTheCompiledCommandIs((cmd) -> cmd.ainst(1));
+    }
+
+    @Test
     public void ainstZero() {
         GivenSourceCode("@0")
                 .ThenTheCompiledCodeIs("0000000000000000");

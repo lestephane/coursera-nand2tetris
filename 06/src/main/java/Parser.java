@@ -39,15 +39,23 @@ public class Parser {
 
     public Command command() {
         if (currentLine == null) return null;
+        final String line = trimOfWhitespaceAndComments(currentLine);
 
-        final String trimmedLine = currentLine.trim();
-        if (trimmedLine.startsWith("//") || trimmedLine.isEmpty()) {
+        if (line.startsWith("//") || line.isEmpty()) {
             return Commands.comment();
-        } else if (trimmedLine.startsWith("@")) {
-            return Commands.ainst(trimmedLine);
+        } else if (line.startsWith("@")) {
+            return Commands.ainst(line);
         } else {
-            return Commands.cinst(trimmedLine);
+            return Commands.cinst(line);
         }
     }
 
+    private String trimOfWhitespaceAndComments(final String line) {
+        int pos = line.indexOf("//");
+        if (pos != -1) {
+            return line.substring(0, pos).trim();
+        } else {
+            return line.trim();
+        }
+    }
 }
