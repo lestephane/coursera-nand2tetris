@@ -84,7 +84,6 @@ public class HackAssemblerTest {
     }
 
     @Test
-    @Ignore
     public void cinstSimpleJump() {
         GivenSourceCommand("0;JMP")
                 .ThenTheCompiledCommandIs((cmd) -> {

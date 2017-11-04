@@ -47,10 +47,9 @@ public class Parser {
             return Commands.comment();
         } else if (trimmedLine.startsWith("@")) {
             return Commands.ainst(trimmedLine);
-        } else if ("AMD".indexOf(trimmedLine.charAt(0)) != -1) {
+        } else {
             return Commands.cinst(trimmedLine);
         }
-        return null;
     }
 
     public interface Command {
@@ -139,7 +138,17 @@ public class Parser {
         }
 
         private String compileJmp() {
-            return "000";
+            switch(jmp) {
+                case "":  return "000";
+                case "JGT": return "001";
+                case "JEQ": return "010";
+                case "JGE": return "011";
+                case "JLT": return "100";
+                case "JNE": return "101";
+                case "JLE": return "110";
+                case "JMP": return "111";
+            }
+            return null;
         }
 
         private String compileDest() {
