@@ -1,4 +1,9 @@
-import java.io.StringWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class HackAssembler {
     private final Parser parser;
@@ -7,15 +12,28 @@ public class HackAssembler {
         parser = new Parser(source);
     }
 
-    public String compile() {
-        StringWriter sw = new StringWriter();
+    public HackAssembler(File sourceFile) {
+        parser = Parser.createParser(sourceFile);
+    }
+
+    public void compileTo(Writer w) throws IOException {
         while (parser.hasMoreCommands()) {
-            Parser.Command command = parser.command();
+            Command command = parser.command();
             String compiled = command.compile();
             assert compiled.isEmpty() | compiled.trim().length() == 16 : compiled;
-            sw.append(compiled);
+            w.write(compiled);
             parser.advance();
         }
-        return sw.toString();
+    }
+
+    public static void main(String[] args) throws IOException {
+        Logger log = Logger.getLogger(HackAssembler.class.getSimpleName());
+        log.setLevel(Level.INFO);
+        log.info(() -> "source file:" + args[0]);
+        String target = args[0].replace(".asm", ".hack");
+        log.info(() -> "target file:" + target);
+        FileWriter w = new FileWriter(target);
+        new HackAssembler(new File(args[0])).compileTo(w);
+        w.close();
     }
 }
