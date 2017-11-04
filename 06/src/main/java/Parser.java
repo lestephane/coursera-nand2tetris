@@ -33,6 +33,10 @@ public class Parser {
         public static Command ainst(String line) {
             return new AInstruction(line);
         }
+
+        public static Command cinst(String line) {
+            return new CInstruction(line);
+        }
     }
 
     public Command command() {
@@ -43,6 +47,8 @@ public class Parser {
             return Commands.comment();
         } else if (trimmedLine.startsWith("@")) {
             return Commands.ainst(trimmedLine);
+        } else if ("AMD".indexOf(trimmedLine.charAt(0)) != -1) {
+            return Commands.cinst(trimmedLine);
         }
         return null;
     }
@@ -52,13 +58,13 @@ public class Parser {
 
     }
 
-    private static class Comment implements Command {
+    public static class Comment implements Command {
         public String compile() {
             return "";
         }
     }
 
-    private static class AInstruction implements Command {
+    public static class AInstruction implements Command {
         private final int value;
 
         public AInstruction(String line) {
@@ -72,15 +78,76 @@ public class Parser {
         }
     }
 
-    private class RawCommand implements Command {
-        private final String rawCompiledForm;
+    public static class CInstruction implements Command {
+        private final String dest;
+        private final String comp;
+        private final String jmp;
 
-        public RawCommand(String rawCompiledForm) {
-            this.rawCompiledForm = rawCompiledForm;
+
+        public CInstruction(String line) {
+            int posEqualSign = line.indexOf('=');
+            if (posEqualSign != -1) {
+                dest = line.substring(0, posEqualSign);
+            } else {
+                dest = "";
+            }
+            int posComp = posEqualSign + 1;
+            int posSemiColon = line.indexOf(';');
+            if (posSemiColon != -1) {
+                comp = line.substring(posComp, posSemiColon);
+                jmp = line.substring(posSemiColon + 1);
+            } else {
+                comp = line.substring(posComp);
+                jmp = "";
+            }
         }
 
         public String compile() {
-            return rawCompiledForm;
+            return "111" +
+                    compileM() +
+                    compileComp() +
+                    compileDest() +
+                    compileJmp() + "\n";
+        }
+
+        private String compileM() {
+            return comp.contains("M")? "1" : "0";
+        }
+
+        private String compileComp() {
+            switch (comp.replace("M" ,"A")) {
+                case "0": return "101010";
+                case "1": return "111111";
+                case "-1": return "111010";
+                case "D": return "001100";
+                case "A": return "110000";
+                case "!D": return "001101";
+                case "!A": return "110001";
+                case "-D": return "001111";
+                case "-A": return "110011";
+                case "D+1": return "011111";
+                case "A+1": return "110111";
+                case "D-1": return "001110";
+                case "A-1": return "110010";
+                case "D+A": return "000010";
+                case "D-A": return "010011";
+                case "A-D": return "000111";
+                case "D&A": return "000000";
+                case "D|A": return "010101";
+            }
+            return null;
+        }
+
+        private String compileJmp() {
+            return "000";
+        }
+
+        private String compileDest() {
+            StringBuilder b = new StringBuilder();
+            b.append(dest.contains("M")? '1' : '0');
+            b.append(dest.contains("D")? '1' : '0');
+            b.append(dest.contains("A")? '1' : '0');
+            return b.toString();
         }
     }
 }

@@ -11,7 +11,9 @@ public class HackAssembler {
         StringWriter sw = new StringWriter();
         while (parser.hasMoreCommands()) {
             Parser.Command command = parser.command();
-            sw.append(command.compile());
+            String compiled = command.compile();
+            assert compiled.isEmpty() | compiled.trim().length() == 16 : compiled;
+            sw.append(compiled);
             parser.advance();
         }
         return sw.toString();
