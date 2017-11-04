@@ -17,9 +17,10 @@ public class HackAssembler {
     }
 
     public void compileTo(Writer w) throws IOException {
+        SymbolTable symbolTable = new SymbolTable();
         while (parser.hasMoreCommands()) {
-            Command command = parser.command();
-            String compiled = command.compile();
+            Commands.Command command = parser.command();
+            String compiled = command.compile(symbolTable);
             assert compiled.isEmpty() | compiled.trim().length() == 16 : compiled;
             w.write(compiled);
             parser.advance();

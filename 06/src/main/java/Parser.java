@@ -37,7 +37,7 @@ public class Parser {
         }
     }
 
-    public Command command() {
+    public Commands.Command command() {
         if (currentLine == null) return null;
         final String line = trimOfWhitespaceAndComments(currentLine);
 

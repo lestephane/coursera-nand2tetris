@@ -111,6 +111,24 @@ public class HackAssemblerTest {
                 });
     }
 
+    @Test
+    public void predefinedSymbolLowRegister() {
+        GivenSourceCode(
+                "@R0", "@R15", "@SCREEN", "@KBD",
+                "@SP", "@LCL", "@ARG", "@THIS", "@THAT")
+                .ThenTheCompiledCommandsAre((cmds)-> {
+                    cmds.get(0).ainst(0);
+                    cmds.get(1).ainst(15);
+                    cmds.get(2).ainst(16384);
+                    cmds.get(3).ainst(24576);
+                    cmds.get(4).ainst(0);
+                    cmds.get(5).ainst(1);
+                    cmds.get(6).ainst(2);
+                    cmds.get(7).ainst(3);
+                    cmds.get(8).ainst(4);
+                });
+    }
+
     private HackAssemblerTestBuilder GivenSourceFile(String name) {
         File file = new File(System.getProperty("user.dir"), name);
         return new HackAssemblerTestBuilder(file);
