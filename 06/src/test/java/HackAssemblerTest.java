@@ -143,6 +143,16 @@ public class HackAssemblerTest {
                 });
     }
 
+    @Test
+    public void variable() {
+        GivenSourceCode("@firstvar", "@secondvar")
+                .ThenTheCompiledCommandsAre((cmds) -> {
+                    assertThat(cmds.size(), is(2));
+                    cmds.get(0).ainst(16);
+                    cmds.get(1).ainst(17);
+                });
+    }
+
     private HackAssemblerTestBuilder GivenSourceFile(String name) {
         File file = new File(System.getProperty("user.dir"), name);
         return new HackAssemblerTestBuilder(file);

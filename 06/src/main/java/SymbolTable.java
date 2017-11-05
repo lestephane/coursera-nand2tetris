@@ -2,10 +2,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SymbolTable {
+    private static int BUILTIN_REGISTER_COUNT = 15;
+    private int nextAllocatableValue = BUILTIN_REGISTER_COUNT + 1;
+
     private Map<String, Integer> symbols = new HashMap<>();
 
     public SymbolTable() {
-        for (int i = 0; i <= 15; i++) {
+        for (int i = 0; i <= BUILTIN_REGISTER_COUNT; i++) {
            addSymbol("R" + i, i);
         }
         addSymbol("SCREEN", 16384);
@@ -23,6 +26,9 @@ public class SymbolTable {
     }
 
     public Integer lookup(String symbol) {
+        if (!symbols.containsKey(symbol)) {
+            symbols.put(symbol, nextAllocatableValue++);
+        }
         return symbols.get(symbol);
     }
 }
