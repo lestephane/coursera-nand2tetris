@@ -17,7 +17,7 @@ public class SymbolTable {
         addSymbol("THAT", 4);
     }
 
-    private Integer addSymbol(String name, Integer value) {
+    Integer addSymbol(String name, Integer value) {
         assert value != null : name;
         return this.symbols.put(name, value);
     }

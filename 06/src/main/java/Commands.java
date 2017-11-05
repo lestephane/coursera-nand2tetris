@@ -1,7 +1,11 @@
 class Commands {
+    public static boolean affectsProgramCounter(Command c) {
+        return c instanceof AInstruction | c instanceof CInstruction;
+    }
 
     public interface Command {
-        String compile(SymbolTable symbols);
+        boolean isInstruction();
+        String compile(ProgramCounter programCounter, SymbolTable symbols);
     }
 
     private static Comment COMMENT = new Comment();
@@ -18,8 +22,17 @@ class Commands {
         return new CInstruction(line);
     }
 
+    public static Command label(String line) {
+        return new Label(line);
+    }
+
     public static class Comment implements Command {
-        public String compile(SymbolTable symbols) {
+
+        public boolean isInstruction() {
+            return false;
+        }
+
+        public String compile(ProgramCounter programCounter, SymbolTable symbols) {
             return "";
         }
     }
@@ -31,10 +44,16 @@ class Commands {
             symbol = line.substring(1);
         }
 
-        public String compile(SymbolTable symbols) {
-            Integer value = symbols.lookup(symbol);
-            if (value == null) {
-                value = Integer.valueOf(symbol);
+        public boolean isInstruction() {
+            return true;
+        }
+
+        public String compile(ProgramCounter programCounter, SymbolTable symbols) {
+            Integer value = null;
+            try {
+                value = Integer.parseUnsignedInt(symbol);
+            } catch (NumberFormatException e) {
+                value = symbols.lookup(symbol);
             }
             String spacePaddedValue = String.format("%16s", Integer.toBinaryString(value));
             String zeroPaddedValue = spacePaddedValue.replace(' ', '0');
@@ -47,6 +66,9 @@ class Commands {
         private final String comp;
         private final String jmp;
 
+        public boolean isInstruction() {
+            return true;
+        }
 
         public CInstruction(String line) {
             int posEqualSign = line.indexOf('=');
@@ -66,7 +88,7 @@ class Commands {
             }
         }
 
-        public String compile(SymbolTable symbols) {
+        public String compile(ProgramCounter programCounter, SymbolTable symbols) {
             return "111" +
                     compileM() +
                     compileComp() +
@@ -122,6 +144,28 @@ class Commands {
             b.append(dest.contains("D")? '1' : '0');
             b.append(dest.contains("M")? '1' : '0');
             return b.toString();
+        }
+    }
+
+    static class Label implements Command {
+        private final String name;
+
+        public Label(String line) {
+            this.name = line.replace("(", " ")
+                    .replace(")", " ").trim();
+        }
+
+        public String label() {
+            return name;
+        }
+
+        public boolean isInstruction() {
+            return false;
+        }
+
+        public String compile(ProgramCounter programCounter, SymbolTable symbols) {
+            symbols.addSymbol(name, programCounter.value());
+            return "";
         }
     }
 }

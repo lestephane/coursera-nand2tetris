@@ -1,28 +1,55 @@
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
+import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class HackAssembler {
-    private final Parser parser;
+    private final Parser.Source parserSource;
 
     public HackAssembler(String source) {
-        parser = new Parser(source);
+        parserSource = new Parser.StringSource(source);
     }
 
     public HackAssembler(File sourceFile) {
-        parser = Parser.createParser(sourceFile);
+        parserSource = new Parser.FileSource(sourceFile);
     }
 
-    public void compileTo(Writer w) throws IOException {
+    public void compileTo(Writer output) throws IOException {
         SymbolTable symbolTable = new SymbolTable();
-        while (parser.hasMoreCommands()) {
-            Commands.Command command = parser.command();
-            String compiled = command.compile(symbolTable);
+        gatherSymbols(symbolTable);
+        performCompilation(symbolTable, output);
+    }
+
+    private void gatherSymbols(SymbolTable symbolTable) {
+        forEachCommand((pc, cmd) -> {
+            if (cmd instanceof Commands.Label) {
+                String l = ((Commands.Label) cmd).label();
+                symbolTable.addSymbol(l, pc.value());
+            }
+        });
+    }
+
+    private void performCompilation(SymbolTable symbolTable, Writer output) {
+        forEachCommand((pc, cmd) -> {
+            String compiled = cmd.compile(pc, symbolTable);
             assert compiled.isEmpty() | compiled.trim().length() == 16 : compiled;
-            w.write(compiled);
+            try {
+                output.write(compiled);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
+
+    private void forEachCommand(BiConsumer<ProgramCounter, Commands.Command> cmd) {
+        Parser parser = parserSource.makeParser();
+        ProgramCounter pc = new ProgramCounter();
+        while (parser.hasMoreCommands()) {
+            Commands.Command c = parser.command();
+            cmd.accept(pc, c);
+            if (c.isInstruction()) {
+                pc.increment();
+            }
             parser.advance();
         }
     }

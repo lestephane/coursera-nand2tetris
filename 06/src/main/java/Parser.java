@@ -4,25 +4,9 @@ public class Parser {
     private final BufferedReader input;
     private String currentLine;
 
-    public Parser(String input) {
-        this(new BufferedReader(new StringReader(input)));
-    }
-
-    private Parser(File sourceFile) throws FileNotFoundException {
-        this(new BufferedReader(new FileReader(sourceFile)));
-    }
-
     private Parser(BufferedReader r) {
         this.input = r;
         this.advance();
-    }
-
-    public static Parser createParser(File sourceFile) {
-        try {
-            return new Parser(sourceFile);
-        } catch (FileNotFoundException e) {
-            throw new ParseException(e);
-        }
     }
 
     public boolean hasMoreCommands() {
@@ -45,6 +29,8 @@ public class Parser {
             return Commands.comment();
         } else if (line.startsWith("@")) {
             return Commands.ainst(line);
+        } else if (line.startsWith("(") && line.endsWith(")")) {
+            return Commands.label(line);
         } else {
             return Commands.cinst(line);
         }
@@ -56,6 +42,38 @@ public class Parser {
             return line.substring(0, pos).trim();
         } else {
             return line.trim();
+        }
+    }
+
+    public interface Source {
+        Parser makeParser();
+    }
+
+    public static class StringSource implements Source {
+        private final String input;
+
+        public StringSource(String input) {
+            this.input = input;
+        }
+
+        public Parser makeParser() {
+            return new Parser(new BufferedReader(new StringReader(input)));
+        }
+    }
+
+    public static class FileSource implements Source {
+        private final File input;
+
+        public FileSource(File input) {
+            this.input = input;
+        }
+
+        public Parser makeParser() {
+            try {
+                return new Parser(new BufferedReader(new FileReader(input)));
+            } catch (FileNotFoundException e) {
+                throw new ParseException(e);
+            }
         }
     }
 }
