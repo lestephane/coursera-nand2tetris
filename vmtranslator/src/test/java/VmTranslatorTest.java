@@ -38,13 +38,33 @@ public class VmTranslatorTest {
     }
 
     @Test
-    public void popLocal() {
+    public void popToLocal() {
         GivenSourceCode("pop local 0")
                 .ThenTheTranslatedCommandsAre((cmds) -> {
                     cmds.get(0).isCode("// pop local 0");
                     cmds.get(1).isCode("@LCL");
                     cmds.get(2).isCode("D=M");
                     cmds.get(3).isCode("@0");
+                    cmds.get(4).isCode("D=D+A");
+                    cmds.get(5).isCode("@R13");
+                    cmds.get(6).isCode("M=D");
+                    cmds.get(7).isCode("@SP");
+                    cmds.get(8).isCode("AM=M-1");
+                    cmds.get(9).isCode("D=M");
+                    cmds.get(10).isCode("@R13");
+                    cmds.get(11).isCode("A=M");
+                    cmds.get(12).isCode("M=D");
+                });
+    }
+
+    @Test
+    public void popToArgument() {
+        GivenSourceCode("pop argument 1")
+                .ThenTheTranslatedCommandsAre((cmds) -> {
+                    cmds.get(0).isCode("// pop argument 1");
+                    cmds.get(1).isCode("@ARG");
+                    cmds.get(2).isCode("D=M");
+                    cmds.get(3).isCode("@1");
                     cmds.get(4).isCode("D=D+A");
                     cmds.get(5).isCode("@R13");
                     cmds.get(6).isCode("M=D");

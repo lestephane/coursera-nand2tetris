@@ -96,7 +96,7 @@ public class Commands {
         }
         @Override
         public void translateTo(CodeWriter o) throws IOException {
-            o.ainstSymbol(Symbols.LOCAL_MEMORY_SEGMENT);
+            o.ainstSymbol(segment.symbol);
             o.assignMemoryToDataRegister();
             o.ainstValue(i);
             o.raw("D=D+A");
