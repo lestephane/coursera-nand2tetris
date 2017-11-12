@@ -1,114 +1,150 @@
 import java.io.IOException;
 
 public class Commands {
-    enum Segment {
-        local("LCL"),argument("ARG");
+    public interface Command {
 
-        private final String symbol;
+        void translateTo(CodeWriter output) throws IOException;
 
-        Segment(String symbol) {
-            this.symbol = symbol;
-        }
     }
-
     public static Command comment(String line) {
         return new Comment(line);
-    }
-
-    public static Command pushConstant(String line) {
-        return new PushConstantCommand(line);
-    }
-
-    public static Command popCommand(String line) {
-        return new PopCommand(line);
     }
 
     public static Command commented(String originalLine, Command command) {
         return new CommentedCommand(originalLine, command);
     }
 
-    public interface Symbols {
-        String STACK_POINTER = "SP";
-        String LOCAL_MEMORY_SEGMENT = "LCL";
-
+    public static Command pushCommand(String line) {
+        return new PushCommand(line);
     }
 
-    public interface Command {
-        void translateTo(CodeWriter output) throws IOException;
-
+    public static Command popCommand(String line) {
+        return new PopCommand(line);
     }
 
-    private static class Comment implements Command {
-
-        private final String line;
-
-        public Comment(String line) {
-            this.line = line;
-        }
-        public void translateTo(CodeWriter output) throws IOException {
-            output.printComment(this.line);
-        }
-
+    public static Command addCommand() {
+        return new AddCommand();
     }
-    private static class PushConstantCommand implements Command {
 
-        private final int id;
-
-        public PushConstantCommand(String originalSourceLine) {
-            id = Integer.parseInt(originalSourceLine.split(" ")[2]);
-
-        }
-        public void translateTo(CodeWriter output) {
-            output.ainstValue(id);
-            output.assignAddressRegisterToDataRegister();
-            output.ainstSymbol(Symbols.STACK_POINTER);
-            output.incrementMemoryAndAssignToAddressRegister();
-            output.decrementAddressRegister();
-            output.assignDataRegisterToMemory();
-            output.incrementStackPointer();
-        }
-
+    public static Command subCommand() {
+        return new SubtractCommand();
     }
+
     private static class CommentedCommand implements Command {
         private final String line;
-
         private final Command command;
 
         public CommentedCommand(String originalLine, Command command) {
             this.line = originalLine;
             this.command = command;
         }
+
         public void translateTo(CodeWriter output) throws IOException {
             output.printComment(line);
             command.translateTo(output);
+        }
+    }
+
+    private static class Comment implements Command {
+        private final String line;
+
+        public Comment(String line) {
+            this.line = line;
+        }
+
+        public void translateTo(CodeWriter output) throws IOException {
+            output.printComment(this.line);
+        }
+    }
+
+    private static class PushCommand implements Command {
+        private final int id;
+
+        private final Segment segment;
+        public PushCommand(String line) {
+            final String[] parts = line.split(" ");
+            segment = Segment.forName(parts[1]);
+            id = Integer.parseInt(parts[2]);
+        }
+
+        public void translateTo(CodeWriter output) {
+            if (segment == Segment.CONSTANT) {
+                output.ainstValue(id);
+                output.assignAddressRegisterToDataRegister();
+            } else {
+                output.ainstSymbol(segment.symbol());
+                if (segment == Segment.TEMP) {
+                    output.assignAddressRegisterToDataRegister();
+                } else { // local, argument
+                    output.assignMemoryToDataRegister();
+                }
+                output.ainstValue(id);
+                output.incrementAddressRegisterByDataRegisterValue();
+                output.assignMemoryToDataRegister();
+            }
+            output.ainstSymbol("SP");
+            output.incrementMemoryAndAssignToAddressRegister();
+            output.decrementAddressRegister();
+            output.assignDataRegisterToMemory();
         }
 
     }
     private static class PopCommand implements Command {
 
         private final int i;
+
         private final Segment segment;
 
         public PopCommand(String line) {
             String[] parts = line.split(" ");
-            segment = Segment.valueOf(parts[1]);
+            segment = Segment.forName(parts[1]);
             i = Integer.parseInt(parts[2]);
         }
+
         @Override
         public void translateTo(CodeWriter o) throws IOException {
-            o.ainstSymbol(segment.symbol);
-            o.assignMemoryToDataRegister();
+            o.ainstSymbol(segment.symbol());
+            if (segment == Segment.TEMP) {
+                o.assignAddressRegisterToDataRegister();
+            } else { // local, argument
+                o.assignMemoryToDataRegister();
+            }
             o.ainstValue(i);
             o.raw("D=D+A");
             o.ainstSymbol("R13");
             o.assignDataRegisterToMemory();
-            o.ainstSymbol(Symbols.STACK_POINTER);
+            o.ainstSymbol("SP");
             o.decrementMemoryAndAssignToAddressRegister();
             o.assignMemoryToDataRegister();
             o.ainstSymbol("R13");
             o.assignMemoryToAddressRegister();
             o.assignDataRegisterToMemory();
         }
+    }
 
+    private static class AddCommand implements Command {
+        @Override
+        public void translateTo(CodeWriter output) throws IOException {
+            new PopCommand("pop temp 0").translateTo(output);
+            new PopCommand("pop temp 1").translateTo(output);
+            output.ainstValue(6); // tmp[1]
+            output.assignMemoryToDataRegister();
+            output.ainstValue(5); // tmp[0]
+            output.incrementMemoryByDataRegisterValue();
+            new PushCommand("push temp 0").translateTo(output);
+        }
+    }
+
+    private static class SubtractCommand implements Command {
+        @Override
+        public void translateTo(CodeWriter output) throws IOException {
+            new PopCommand("pop temp 0").translateTo(output);
+            new PopCommand("pop temp 1").translateTo(output);
+            output.ainstValue(5); // tmp[0]
+            output.assignMemoryToDataRegister();
+            output.ainstValue(6); // tmp[1]
+            output.decrementMemoryByDataRegisterValue();
+            new PushCommand("push temp 1").translateTo(output);
+        }
     }
 }

@@ -31,12 +31,18 @@ public class Parser {
         log.info(() -> "line: " + originalLine);
         if (originalLine.startsWith("//")) {
             return Commands.comment(originalLine);
-        } else if (originalLine.startsWith("push constant")) {
-            return Commands.commented(originalLine, Commands.pushConstant(effectiveLine));
-        } else if (originalLine.matches("pop (local|argument|this|that) \\d+")) {
+        } else if (originalLine.matches("push (constant|local|argument|this|that|temp) \\d+")) {
+            return Commands.commented(originalLine, Commands.pushCommand(effectiveLine));
+        } else if (originalLine.matches("pop (local|argument|this|that|temp) \\d+")) {
             return Commands.commented(originalLine, Commands.popCommand(effectiveLine));
-        } else {
+        } else if (originalLine.equals("add")) {
+            return Commands.commented(originalLine, Commands.addCommand());
+        } else if (originalLine.equals("sub")) {
+            return Commands.commented(originalLine, Commands.subCommand());
+        } else if (!originalLine.isEmpty()){
             return Commands.comment("UNSUPPORTED: " + originalLine);
+        } else {
+            return Commands.comment("");
         }
     }
 

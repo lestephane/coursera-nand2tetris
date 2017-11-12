@@ -24,17 +24,59 @@ public class VmTranslatorTest {
         }
 
     @Test
-    public void pushConstant() {
-        GivenSourceCode("push constant 10")
+    public void pushFromConstant() {
+        GivenSourceCode("push constant 1")
                 .ThenTheTranslatedCommandsAre((cmds) -> {
-                    cmds.get(0).isCode("// push constant 10");
-                    cmds.get(1).isCode("@10");
+                    assertThat(cmds.size(), is(7));
+                    cmds.get(0).isCode("// push constant 1");
+                    cmds.get(1).isCode("@1");
                     cmds.get(2).isCode("D=A");
                     cmds.get(3).isCode("@SP");
                     cmds.get(4).isCode("AM=M+1");
                     cmds.get(5).isCode("A=A-1");
                     cmds.get(6).isCode("M=D");
                 });
+    }
+
+    @Test
+    public void pushFromLocal() {
+        GivenSourceCode("push local 2")
+                .ThenTheTranslatedCommandsAre((cmds) -> {
+                    cmds.get(0).isCode("// push local 2");
+                    cmds.get(1).isCode("@LCL");
+                    cmds.get(2).isCode("D=M");
+                    cmds.get(3).isCode("@2");
+                    cmds.get(4).isCode("A=D+A");
+                    cmds.get(5).isCode("D=M");
+                    cmds.get(6).isCode("@SP");
+                    cmds.get(7).isCode("AM=M+1");
+                    cmds.get(8).isCode("A=A-1");
+                    cmds.get(9).isCode("M=D");
+                });
+    }
+
+    @Test
+    public void pushFromTemp() {
+        GivenSourceCode("push temp 2")
+                .ThenTheTranslatedCommandsAre((cmds) -> cmds.pushesTempWithLeadingComment(2));
+    }
+
+    @Test
+    public void pushFromThis() {
+        GivenSourceCode("push this 3")
+                .ThenTheTranslatedCommandsAre((cmds) -> cmds.pushesFromThis(3));
+    }
+
+    @Test
+    public void pushFromThat() {
+        GivenSourceCode("push that 4")
+                .ThenTheTranslatedCommandsAre((cmds) -> cmds.pushesFromThat(4));
+    }
+
+    @Test
+    public void pushFromArgument() {
+        GivenSourceCode("push argument 5")
+                .ThenTheTranslatedCommandsAre((cmds) -> cmds.pushesFromArgument(5));
     }
 
     @Test
@@ -47,6 +89,36 @@ public class VmTranslatorTest {
     public void popToArgument() {
         GivenSourceCode("pop argument 1")
                 .ThenTheTranslatedCommandsAre((cmds) -> cmds.popsToArgument(1));
+    }
+
+    @Test
+    public void popToThis() {
+        GivenSourceCode("pop this 2")
+                .ThenTheTranslatedCommandsAre((cmds) -> cmds.popsToThis(2));
+    }
+
+    @Test
+    public void popToThat() {
+        GivenSourceCode("pop that 3")
+                .ThenTheTranslatedCommandsAre((cmds) -> cmds.popsToThat(3));
+    }
+
+    @Test
+    public void popToTemp() {
+        GivenSourceCode("pop temp 4")
+                .ThenTheTranslatedCommandsAre((cmds) -> cmds.popsToTemp(4));
+    }
+
+    @Test
+    public void add() {
+        GivenSourceCode("add")
+                .ThenTheTranslatedCommandsAre((cmds) -> cmds.adds());
+    }
+
+    @Test
+    public void sub() {
+        GivenSourceCode("sub")
+                .ThenTheTranslatedCommandsAre((cmds) -> cmds.subtracts());
     }
 
     private VmTranslatorTestBuilder GivenSourceCode(String line) {
@@ -83,32 +155,116 @@ public class VmTranslatorTest {
 
             cmdConsumer.accept(cmds);
         }
-
     }
 
     private class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerCommandAsserter> {
+        private int pos;
+
+        public HackAssemblerCommandsAsserter() {
+            this.pos = 0;
+        }
+
         public void popsToLocal(int i) {
-            pushesTo("local", "LCL", i);
+            popsToWithLeadingComment(Segment.LOCAL, i);
         }
 
         public void popsToArgument(int i) {
-            pushesTo("argument", "ARG", i);
+            popsToWithLeadingComment(Segment.ARGUMENT, i);
         }
 
-        private void pushesTo(String segmentName, String segmentSymbol, int i) {
-            get(0).isCode("// pop " + segmentName + " " + i);
-            get(1).isCode("@" + segmentSymbol);
-            get(2).isCode("D=M");
-            get(3).isCode("@" + i);
-            get(4).isCode("D=D+A");
-            get(5).isCode("@R13");
-            get(6).isCode("M=D");
-            get(7).isCode("@SP");
-            get(8).isCode("AM=M-1");
-            get(9).isCode("D=M");
-            get(10).isCode("@R13");
-            get(11).isCode("A=M");
-            get(12).isCode("M=D");
+        public void popsToThis(int i) {
+            popsToWithLeadingComment(Segment.THIS, i);
+        }
+
+        public void popsToThat(int i) {
+            popsToWithLeadingComment(Segment.THAT, i);
+        }
+
+        public void popsToTemp(int i) {
+            popsToWithLeadingComment(Segment.TEMP, i);
+        }
+
+        private void popsToTempWithoutLeadingComment(int i) {
+            popsTo(Segment.TEMP, i);
+        }
+
+        private void popsToWithLeadingComment(Segment segment, int i) {
+            get(pos++).isCode("// pop " + segment.name().toLowerCase() + " " + i);
+            popsTo(segment, i);
+        }
+
+        private void popsTo(Segment segment, int i) {
+            get(pos++).isCode("@" + segment.symbol());
+            get(pos++).isCode(segment.usesBasePointer()? "D=M" : "D=A");
+            get(pos++).isCode("@" + i);
+            get(pos++).isCode("D=D+A");
+            get(pos++).isCode("@R13");
+            get(pos++).isCode("M=D");
+            get(pos++).isCode("@SP");
+            get(pos++).isCode("AM=M-1");
+            get(pos++).isCode("D=M");
+            get(pos++).isCode("@R13");
+            get(pos++).isCode("A=M");
+            get(pos++).isCode("M=D");
+        }
+
+        public void pushesTempWithLeadingComment(int i) {
+            pushesFromWithLeadingComment(Segment.TEMP, i);
+        }
+
+        private void pushesTempWithoutLeadingComment(int i) {
+            pushesFrom(Segment.TEMP, i);
+        }
+
+        public void pushesFromThis(int i) {
+            pushesFromWithLeadingComment(Segment.THIS, i);
+        }
+
+        public void pushesFromThat(int i) {
+            pushesFromWithLeadingComment(Segment.THAT, i);
+        }
+
+        public void pushesFromArgument(int i) {
+            pushesFromWithLeadingComment(Segment.ARGUMENT, i);
+        }
+
+        private void pushesFromWithLeadingComment(Segment segment, int i) {
+            get(pos++).isCode("// push " + segment.name().toLowerCase() + " " + i);
+            pushesFrom(segment, i);
+        }
+
+        private void pushesFrom(Segment segment, int i) {
+            get(pos++).isCode("@" + segment.symbol());
+            get(pos++).isCode(segment.usesBasePointer()? "D=M" : "D=A");
+            get(pos++).isCode("@" + i);
+            get(pos++).isCode("A=D+A");
+            get(pos++).isCode("D=M");
+            get(pos++).isCode("@SP");
+            get(pos++).isCode("AM=M+1");
+            get(pos++).isCode("A=A-1");
+            get(pos++).isCode("M=D");
+        }
+
+        public void adds() {
+            get(pos++).isCode("// add");
+            popsToTempWithoutLeadingComment(0);
+            popsToTempWithoutLeadingComment(1);
+            get(pos++).isCode("@6");
+            get(pos++).isCode("D=M");
+            get(pos++).isCode("@5");
+            get(pos++).isCode("M=D+M");
+            pushesTempWithoutLeadingComment(0);
+        }
+
+        public void subtracts() {
+            get(pos++).isCode("// sub");
+            popsToTempWithoutLeadingComment(0);
+            popsToTempWithoutLeadingComment(1);
+            get(pos++).isCode("@5");
+            get(pos++).isCode("D=M");
+            get(pos++).isCode("@6");
+            get(pos++).isCode("M=M-D");
+            pushesTempWithoutLeadingComment(1);
         }
     }
 
@@ -124,6 +280,5 @@ public class VmTranslatorTest {
         public void isCode(String expectedCode) {
             assertThat("code at line number " + lineNumber, this.code, is(expectedCode));
         }
-
     }
 }

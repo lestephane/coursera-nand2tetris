@@ -47,21 +47,24 @@ public class CodeWriter {
         output.println(assign().mMinusOne().toA().andM());
     }
 
-    public void incrementStackPointer() {
-        ainstSymbol(Commands.Symbols.STACK_POINTER);
-        incrementM();
-    }
-
-    private void incrementM() {
-        output.println(assign().mPlusOne().toM());
-    }
-
     public void raw(String s) {
         output.println(s);
     }
 
     public void decrementAddressRegister() {
         output.println(assign().aMinusOne().toA());
+    }
+
+    public void incrementAddressRegisterByDataRegisterValue() {
+        output.println(assign().aPlusD().toA());
+    }
+
+    public void incrementMemoryByDataRegisterValue() {
+        output.println(assign().mPlusD().toM());
+    }
+
+    public void decrementMemoryByDataRegisterValue() {
+        output.println(assign().mMinusD().toM());
     }
 
     public void close() {
@@ -127,6 +130,21 @@ public class CodeWriter {
 
         public AssignmentOperationBuilder mMinusOne() {
             from = "M-1";
+            return this;
+        }
+
+        public AssignmentOperationBuilder aPlusD() {
+            from = "D+A";
+            return this;
+        }
+
+        public AssignmentOperationBuilder mPlusD() {
+            from = "D+M";
+            return this;
+        }
+
+        public AssignmentOperationBuilder mMinusD() {
+            from = "M-D";
             return this;
         }
     }
