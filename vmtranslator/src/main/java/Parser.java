@@ -33,7 +33,7 @@ public class Parser {
             return Commands.comment(originalLine);
         } else if (originalLine.startsWith("push constant")) {
             return Commands.commented(originalLine, Commands.pushConstant(effectiveLine));
-        } else if (originalLine.matches("pop (local|argument) \\d+")) {
+        } else if (originalLine.matches("pop (local|argument|this|that) \\d+")) {
             return Commands.commented(originalLine, Commands.popCommand(effectiveLine));
         } else {
             return Commands.comment("UNSUPPORTED: " + originalLine);
