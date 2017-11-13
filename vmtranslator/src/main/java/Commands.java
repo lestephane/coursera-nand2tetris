@@ -5,11 +5,11 @@ public class Commands {
 
         void translateTo(CodeWriter output) throws IOException;
 
+
     }
     public static Command comment(String line) {
         return new Comment(line);
     }
-
     public static Command commented(String originalLine, Command command) {
         return new CommentedCommand(originalLine, command);
     }
@@ -24,6 +24,10 @@ public class Commands {
 
     public static Command addCommand() {
         return new AddCommand();
+    }
+
+    public static Command eqCommand() {
+        return new EqCommand();
     }
 
     public static Command subCommand() {
@@ -145,6 +149,41 @@ public class Commands {
             output.ainstValue(6); // tmp[1]
             output.decrementMemoryByDataRegisterValue();
             new PushCommand("push temp 1").translateTo(output);
+        }
+    }
+
+    private static class EqCommand implements Command {
+        private static int globalEqCounter = 0;
+        private final int myEqCounter;
+
+        public EqCommand() {
+            this.myEqCounter = globalEqCounter++;
+        }
+
+        @Override
+        public void translateTo(CodeWriter o) throws IOException {
+            new PopCommand("pop temp 1").translateTo(o);
+            new PopCommand("pop temp 0").translateTo(o);
+            String x = "@5"; // x comes from temp 0
+            String y = "@6"; // y comes from temp 1
+            String f = "@5"; // where the result is stored
+            String eqLabel = "EQ" + myEqCounter;
+            String eqEndLabel = "EQEND" + myEqCounter;
+            o.raw(x);
+            o.raw("D=M");
+            o.raw(y);
+            o.raw("D=D-M");
+            o.raw("@" + eqLabel);
+            o.raw("D;JEQ");
+            o.raw("D=0");       // x != y
+            o.raw("@" + eqEndLabel);
+            o.raw("0;JMP");
+            o.raw("(" + eqLabel + ")");     // x == y
+            o.raw("D=1");
+            o.raw("(" + eqEndLabel + ")");
+            o.raw(f);        // temp[0] holds result
+            o.raw("M=D");
+            new PushCommand("push temp 0").translateTo(o);
         }
     }
 }

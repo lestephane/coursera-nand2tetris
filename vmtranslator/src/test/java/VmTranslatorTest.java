@@ -121,8 +121,21 @@ public class VmTranslatorTest {
                 .ThenTheTranslatedCommandsAre((cmds) -> cmds.subtracts());
     }
 
+    @Test
+    public void eq() {
+        GivenSourceCode("eq", "eq")
+                .ThenTheTranslatedCommandsAre((cmds) -> {
+            cmds.testsForEquality(0);
+            cmds.testsForEquality(1);
+        });
+    }
+
     private VmTranslatorTestBuilder GivenSourceCode(String line) {
         return new VmTranslatorTestBuilder(line);
+    }
+
+    private VmTranslatorTestBuilder GivenSourceCode(String ... lines) {
+        return new VmTranslatorTestBuilder(String.join("\n", lines));
     }
 
     private class VmTranslatorTestBuilder {
@@ -159,9 +172,11 @@ public class VmTranslatorTest {
 
     private class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerCommandAsserter> {
         private int pos;
+        private int eqTestCount;
 
         public HackAssemblerCommandsAsserter() {
             this.pos = 0;
+            this.eqTestCount = 0;
         }
 
         public void popsToLocal(int i) {
@@ -265,6 +280,29 @@ public class VmTranslatorTest {
             get(pos++).isCode("@6");
             get(pos++).isCode("M=M-D");
             pushesTempWithoutLeadingComment(1);
+        }
+
+        @Test
+        public void testsForEquality(int eqCounter) {
+            get(pos++).isCode("// eq");
+            popsToTempWithoutLeadingComment(1);
+            popsToTempWithoutLeadingComment(0);
+            get(pos++).isCode("@5");        // x
+            get(pos++).isCode("D=M");
+            get(pos++).isCode("@6");        // y
+            get(pos++).isCode("D=D-M");
+            get(pos++).isCode("@EQ" + eqCounter);
+            get(pos++).isCode("D;JEQ");
+            get(pos++).isCode("D=0");       // x != y
+            get(pos++).isCode("@EQEND" + eqCounter);
+            get(pos++).isCode("0;JMP");
+            get(pos++).isCode("(EQ" + eqCounter + ")");     // x == y
+            get(pos++).isCode("D=1");
+            get(pos++).isCode("(EQEND" + eqCounter + ")");
+            get(pos++).isCode("@5");        // temp[0] holds result
+            get(pos++).isCode("M=D");
+            pushesTempWithoutLeadingComment(0);
+            eqTestCount ++;
         }
     }
 

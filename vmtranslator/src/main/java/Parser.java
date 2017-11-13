@@ -39,6 +39,8 @@ public class Parser {
             return Commands.commented(originalLine, Commands.addCommand());
         } else if (originalLine.equals("sub")) {
             return Commands.commented(originalLine, Commands.subCommand());
+        } else if (originalLine.equals("eq")) {
+            return Commands.commented(originalLine, Commands.eqCommand());
         } else if (!originalLine.isEmpty()){
             return Commands.comment("UNSUPPORTED: " + originalLine);
         } else {
