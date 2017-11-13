@@ -41,6 +41,8 @@ public class Parser {
             return Commands.commented(originalLine, Commands.subCommand());
         } else if (originalLine.equals("eq")) {
             return Commands.commented(originalLine, Commands.eqCommand());
+        } else if (originalLine.equals("gt")) {
+            return Commands.commented(originalLine, Commands.gtCommand());
         } else if (!originalLine.isEmpty()){
             return Commands.comment("UNSUPPORTED: " + originalLine);
         } else {

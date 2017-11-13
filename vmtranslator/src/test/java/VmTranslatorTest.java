@@ -125,9 +125,18 @@ public class VmTranslatorTest {
     public void eq() {
         GivenSourceCode("eq", "eq")
                 .ThenTheTranslatedCommandsAre((cmds) -> {
-            cmds.testsForEquality(0);
-            cmds.testsForEquality(1);
+            cmds.eq(0);
+            cmds.eq(1);
         });
+    }
+
+    @Test
+    public void gt() {
+        GivenSourceCode("gt", "gt")
+                .ThenTheTranslatedCommandsAre((cmds) -> {
+                    cmds.gt(0);
+                    cmds.gt(1);
+                });
     }
 
     private VmTranslatorTestBuilder GivenSourceCode(String line) {
@@ -170,7 +179,7 @@ public class VmTranslatorTest {
         }
     }
 
-    private class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerCommandAsserter> {
+    public static class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerCommandAsserter> {
         private int pos;
         private int eqTestCount;
 
@@ -282,27 +291,34 @@ public class VmTranslatorTest {
             pushesTempWithoutLeadingComment(1);
         }
 
-        @Test
-        public void testsForEquality(int eqCounter) {
-            get(pos++).isCode("// eq");
+        public void eq(int opCounter) {
+            performsComparisonOperation(opCounter, "EQ");
+        }
+
+        private void performsComparisonOperation(int opCounter, String op) {
+            get(pos++).isCode("// " + op.toLowerCase());
             popsToTempWithoutLeadingComment(1);
             popsToTempWithoutLeadingComment(0);
             get(pos++).isCode("@5");        // x
             get(pos++).isCode("D=M");
             get(pos++).isCode("@6");        // y
             get(pos++).isCode("D=D-M");
-            get(pos++).isCode("@EQ" + eqCounter);
-            get(pos++).isCode("D;JEQ");
+            get(pos++).isCode("@" + op + opCounter);
+            get(pos++).isCode("D;J" + op);
             get(pos++).isCode("D=0");       // x != y
-            get(pos++).isCode("@EQEND" + eqCounter);
+            get(pos++).isCode("@" + op + "END" + opCounter);
             get(pos++).isCode("0;JMP");
-            get(pos++).isCode("(EQ" + eqCounter + ")");     // x == y
+            get(pos++).isCode("(" + op + opCounter + ")");     // x == y
             get(pos++).isCode("D=1");
-            get(pos++).isCode("(EQEND" + eqCounter + ")");
+            get(pos++).isCode("(" + op + "END" + opCounter + ")");
             get(pos++).isCode("@5");        // temp[0] holds result
             get(pos++).isCode("M=D");
             pushesTempWithoutLeadingComment(0);
             eqTestCount ++;
+        }
+
+        public void gt(int opCounter) {
+            performsComparisonOperation(opCounter, "GT");
         }
     }
 

@@ -2,9 +2,11 @@ import java.io.PrintWriter;
 import java.io.Writer;
 
 public class CodeWriter {
+    private int opCounter;
     private final PrintWriter output;
 
     public CodeWriter(Writer output) {
+        this.opCounter = 0;
         this.output = new PrintWriter(output);
     }
 
@@ -73,6 +75,72 @@ public class CodeWriter {
 
     private AssignmentOperationBuilder assign() {
         return new AssignmentOperationBuilder();
+    }
+
+    void pop(Segment segment, int i) {
+        ainstSymbol(segment.symbol());
+        if (segment == Segment.TEMP) {
+            assignAddressRegisterToDataRegister();
+        } else { // local, argument
+            assignMemoryToDataRegister();
+        }
+        ainstValue(i);
+        raw("D=D+A");
+        ainstSymbol("R13");
+        assignDataRegisterToMemory();
+        ainstSymbol("SP");
+        decrementMemoryAndAssignToAddressRegister();
+        assignMemoryToDataRegister();
+        ainstSymbol("R13");
+        assignMemoryToAddressRegister();
+        assignDataRegisterToMemory();
+    }
+
+    void push(Segment segment, int id) {
+        if (segment == Segment.CONSTANT) {
+            ainstValue(id);
+            assignAddressRegisterToDataRegister();
+        } else {
+            ainstSymbol(segment.symbol());
+            if (segment == Segment.TEMP) {
+                assignAddressRegisterToDataRegister();
+            } else { // local, argument
+                assignMemoryToDataRegister();
+            }
+            ainstValue(id);
+            incrementAddressRegisterByDataRegisterValue();
+            assignMemoryToDataRegister();
+        }
+        ainstSymbol("SP");
+        incrementMemoryAndAssignToAddressRegister();
+        decrementAddressRegister();
+        assignDataRegisterToMemory();
+    }
+
+    void op(String op) {
+        pop(Segment.TEMP, 1);
+        String y = "@6"; // y comes from temp 1
+        pop(Segment.TEMP, 0);
+        String x = "@5"; // x comes from temp 0
+        String f = "@5"; // the result will be stored in temp 0
+        String operationLabel = op + opCounter;
+        String operationEndLabel = op + "END" + opCounter;
+        raw(x);
+        raw("D=M");
+        raw(y);
+        raw("D=D-M");
+        raw("@" + operationLabel);
+        raw("D;J" + op);
+        raw("D=0");       // x != y
+        raw("@" + operationEndLabel);
+        raw("0;JMP");
+        raw("(" + operationLabel + ")");     // x == y
+        raw("D=1");
+        raw("(" + operationEndLabel + ")");
+        raw(f);        // temp[0] holds result
+        raw("M=D");
+        push(Segment.TEMP, 0);
+        opCounter++;
     }
 
     private class AssignmentOperationBuilder {

@@ -6,6 +6,7 @@ public class Commands {
         void translateTo(CodeWriter output) throws IOException;
 
 
+
     }
     public static Command comment(String line) {
         return new Comment(line);
@@ -13,7 +14,6 @@ public class Commands {
     public static Command commented(String originalLine, Command command) {
         return new CommentedCommand(originalLine, command);
     }
-
     public static Command pushCommand(String line) {
         return new PushCommand(line);
     }
@@ -28,6 +28,10 @@ public class Commands {
 
     public static Command eqCommand() {
         return new EqCommand();
+    }
+
+    public static Command gtCommand() {
+        return new GreatherThanCommand();
     }
 
     public static Command subCommand() {
@@ -72,31 +76,12 @@ public class Commands {
         }
 
         public void translateTo(CodeWriter output) {
-            if (segment == Segment.CONSTANT) {
-                output.ainstValue(id);
-                output.assignAddressRegisterToDataRegister();
-            } else {
-                output.ainstSymbol(segment.symbol());
-                if (segment == Segment.TEMP) {
-                    output.assignAddressRegisterToDataRegister();
-                } else { // local, argument
-                    output.assignMemoryToDataRegister();
-                }
-                output.ainstValue(id);
-                output.incrementAddressRegisterByDataRegisterValue();
-                output.assignMemoryToDataRegister();
-            }
-            output.ainstSymbol("SP");
-            output.incrementMemoryAndAssignToAddressRegister();
-            output.decrementAddressRegister();
-            output.assignDataRegisterToMemory();
+            output.push(segment, id);
         }
 
     }
     private static class PopCommand implements Command {
-
         private final int i;
-
         private final Segment segment;
 
         public PopCommand(String line) {
@@ -107,22 +92,7 @@ public class Commands {
 
         @Override
         public void translateTo(CodeWriter o) throws IOException {
-            o.ainstSymbol(segment.symbol());
-            if (segment == Segment.TEMP) {
-                o.assignAddressRegisterToDataRegister();
-            } else { // local, argument
-                o.assignMemoryToDataRegister();
-            }
-            o.ainstValue(i);
-            o.raw("D=D+A");
-            o.ainstSymbol("R13");
-            o.assignDataRegisterToMemory();
-            o.ainstSymbol("SP");
-            o.decrementMemoryAndAssignToAddressRegister();
-            o.assignMemoryToDataRegister();
-            o.ainstSymbol("R13");
-            o.assignMemoryToAddressRegister();
-            o.assignDataRegisterToMemory();
+            o.pop(segment, i);
         }
     }
 
@@ -184,6 +154,14 @@ public class Commands {
             o.raw(f);        // temp[0] holds result
             o.raw("M=D");
             new PushCommand("push temp 0").translateTo(o);
+        }
+
+    }
+
+    private static class GreatherThanCommand implements Command {
+        @Override
+        public void translateTo(CodeWriter o) throws IOException {
+            o.op("GT");
         }
     }
 }
