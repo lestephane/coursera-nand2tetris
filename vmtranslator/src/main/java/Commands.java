@@ -177,13 +177,13 @@ public class Commands {
 
     private static class AndCommand implements Command {
         public void translateTo(CodeWriter o) throws IOException {
-            o.logicalOperation("AND", "&");
+            o.logicalOperation("&");
         }
 
     }
     private static class OrCommand implements Command {
         public void translateTo(CodeWriter o) throws IOException {
-            o.logicalOperation("OR", "|");
+            o.logicalOperation("|");
         }
 
     }

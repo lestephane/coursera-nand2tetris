@@ -42,11 +42,11 @@ public class CodeWriter {
     }
 
     public void incrementMemoryAndAssignToAddressRegister() {
-        output.println(assign().mPlusOne().toA().andM());
+        output.println(assign().mPlusOne().toA().andToM());
     }
 
     public void decrementMemoryAndAssignToAddressRegister() {
-        output.println(assign().mMinusOne().toA().andM());
+        output.println(assign().mMinusOne().toA().andToM());
     }
 
     public void raw(String s) {
@@ -121,8 +121,14 @@ public class CodeWriter {
         op(opName, "-", opName);
     }
 
-    public void logicalOperation(String opName, String opOperator) {
-        op(opName, opOperator, "NE");
+    public void logicalOperation(String opOperator) {
+        pop(Segment.TEMP, 0);
+        pop(Segment.TEMP, 1);
+        atTemp(1);
+        assignMemoryToDataRegister();
+        atTemp(0);
+        raw("M=D" + opOperator + "M");
+        push(Segment.TEMP, 0);
     }
 
     void op(String operationName, String opOperator, String opTrueJumpCondition) {
@@ -206,7 +212,7 @@ public class CodeWriter {
             return this;
         }
 
-        public AssignmentOperationBuilder andM() {
+        public AssignmentOperationBuilder andToM() {
             to += "M";
             return this;
         }
