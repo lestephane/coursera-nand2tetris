@@ -3,13 +3,13 @@ import org.junit.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-public class VmTranslatorTest {
-    private VmTranslatorTestBuilder GivenSourceCode(String line) {
-        return new VmTranslatorTestBuilder(line);
+public class VMTranslatorTest {
+    private VMTranslatorTestBuilder GivenSourceCode(String line) {
+        return new VMTranslatorTestBuilder(line);
     }
 
-    private VmTranslatorTestBuilder GivenSourceCode(String ... lines) {
-        return new VmTranslatorTestBuilder(String.join("\n", lines));
+    private VMTranslatorTestBuilder GivenSourceCode(String ... lines) {
+        return new VMTranslatorTestBuilder(String.join("\n", lines));
     }
 
     @Test
@@ -27,34 +27,26 @@ public class VmTranslatorTest {
         }
 
     @Test
-    public void pushFromConstant() {
-        GivenSourceCode("push constant 1")
-                .ThenTheTranslatedCommandsAre((cmds) -> {
-                    assertThat(cmds.size(), is(7));
-                    cmds.get(0).isCode("// push constant 1");
-                    cmds.get(1).isCode("@1");
-                    cmds.get(2).isCode("D=A");
-                    cmds.get(3).isCode("@SP");
-                    cmds.get(4).isCode("AM=M+1");
-                    cmds.get(5).isCode("A=A-1");
-                    cmds.get(6).isCode("M=D");
+    public void pushConstantTddStyle() {
+        GivenSourceCode("push constant 123")
+                .ThenTheTranslatedCommandsAre((asm) -> {
+                    asm.pushesConstant(123);
+                });
+    }
+
+    @Test
+    public void pushConstantSpecStyle() {
+        GivenSourceCode("push constant 123")
+                .ThenTheResultingExecutionStateIs((cpu) -> {
+                    assertThat(cpu.stack().peek(), is((short)123));
                 });
     }
 
     @Test
     public void pushFromLocal() {
-        GivenSourceCode("push local 2")
+        GivenSourceCode("push local 456")
                 .ThenTheTranslatedCommandsAre((cmds) -> {
-                    cmds.get(0).isCode("// push local 2");
-                    cmds.get(1).isCode("@LCL");
-                    cmds.get(2).isCode("D=M");
-                    cmds.get(3).isCode("@2");
-                    cmds.get(4).isCode("A=D+A");
-                    cmds.get(5).isCode("D=M");
-                    cmds.get(6).isCode("@SP");
-                    cmds.get(7).isCode("AM=M+1");
-                    cmds.get(8).isCode("A=A-1");
-                    cmds.get(9).isCode("M=D");
+                    cmds.pushesLocal(456);
                 });
     }
 
@@ -167,6 +159,40 @@ public class VmTranslatorTest {
                 .ThenTheTranslatedCommandsAre((cmds) -> {
                     cmds.and(0);
                     cmds.or(1);
+                });
+    }
+
+    @Test
+    public void popToStatic() {
+        GivenSourceCode("pop static 123")
+                .ThenTheTranslatedCommandsAre((cmds) -> {
+                    cmds.popsToStatic(123);
+                });
+    }
+
+    @Test
+    public void pushStatic() {
+        GivenSourceCode("push static 123")
+                .ThenTheTranslatedCommandsAre((cmds) -> {
+                    cmds.pushFromStatic(123);
+                });
+    }
+
+    @Test
+    public void pushPointer() {
+        GivenSourceCode("push pointer 0", "push pointer 1")
+                .ThenTheTranslatedCommandsAre((asm) -> {
+                    asm.pushesThis();
+                    asm.pushesThat();
+                });
+    }
+
+    @Test
+    public void popPointer() {
+        GivenSourceCode("pop pointer 1", "pop pointer 0")
+                .ThenTheTranslatedCommandsAre((cmds) -> {
+                    cmds.popsThat();
+                    cmds.popsThis();
                 });
     }
 }

@@ -3,18 +3,18 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class VmTranslator {
+public class VMTranslator {
     private final Parser.Source parserSource;
-    public VmTranslator(String input) {
+    public VMTranslator(String input) {
         parserSource = new Parser.StringSource(input);
     }
 
-    public VmTranslator(File input) {
+    public VMTranslator(File input) {
         parserSource = new Parser.FileSource(input);
     }
 
-    public void translateTo(Writer output) {
-        CodeWriter codeOutput = new CodeWriter(output);
+    public void translateTo(String compilationUnitName, Writer output) {
+        CodeWriter codeOutput = new CodeWriter(compilationUnitName, output);
         try {
             performTranslationTo(codeOutput);
         } finally {
@@ -44,13 +44,14 @@ public class VmTranslator {
     }
 
     public static void main(String[] args) throws IOException {
-        Logger log = Logger.getLogger(VmTranslator.class.getSimpleName());
+        final Logger log = Logger.getLogger(VMTranslator.class.getSimpleName());
         log.setLevel(Level.INFO);
         log.info(() -> "source file:" + args[0]);
-        String target = args[0].replace(".vm", ".asm");
-        log.info(() -> "target file:" + target);
-        FileWriter w = new FileWriter(target);
-        new VmTranslator(new File(args[0])).translateTo(w);
+        final String targetFileName = args[0].replace(".vm", ".asm");
+        log.info(() -> "target file:" + targetFileName);
+        final FileWriter w = new FileWriter(targetFileName);
+        final String compilationUnitName = args[0].replace(".vm", "");
+        new VMTranslator(new File(args[0])).translateTo(compilationUnitName, w);
         w.close();
     }
 }

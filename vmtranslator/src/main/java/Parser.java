@@ -27,13 +27,13 @@ public class Parser {
         final String originalLine =  currentLine.trim();
         final String effectiveLine = trimOfWhitespaceAndComments(currentLine);
 
-        Logger log = Logger.getLogger(VmTranslator.class.getSimpleName());
-        log.info(() -> "line: " + originalLine);
+        Logger log = Logger.getLogger(VMTranslator.class.getSimpleName());
+        log.fine(() -> "line: " + originalLine);
         if (originalLine.startsWith("//")) {
             return Commands.comment(originalLine);
-        } else if (originalLine.matches("push (constant|local|argument|this|that|temp) \\d+")) {
+        } else if (originalLine.matches("push (constant|local|argument|this|that|temp|static|pointer) \\d+")) {
             return Commands.commented(originalLine, Commands.pushCommand(effectiveLine));
-        } else if (originalLine.matches("pop (local|argument|this|that|temp) \\d+")) {
+        } else if (originalLine.matches("pop (local|argument|this|that|temp|static|pointer) \\d+")) {
             return Commands.commented(originalLine, Commands.popCommand(effectiveLine));
         } else if (originalLine.equals("add")) {
             return Commands.commented(originalLine, Commands.addCommand());

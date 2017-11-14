@@ -4,8 +4,10 @@ import java.io.Writer;
 public class CodeWriter {
     private int opCounter;
     private final PrintWriter output;
+    private final String compilationUnitName;
 
-    public CodeWriter(Writer output) {
+    public CodeWriter(String compilationUnitName, Writer output) {
+        this.compilationUnitName = compilationUnitName;
         this.opCounter = 0;
         this.output = new PrintWriter(output);
     }
@@ -78,14 +80,16 @@ public class CodeWriter {
     }
 
     void pop(Segment segment, int i) {
-        ainstSymbol(segment.symbol());
-        if (segment == Segment.TEMP) {
-            assignAddressRegisterToDataRegister();
-        } else { // local, argument
+        ainstSymbol(segment.memoryLocation(compilationUnitName, i));
+        if (segment.usesBasePointer()) {
             assignMemoryToDataRegister();
+        } else {
+            assignAddressRegisterToDataRegister();
         }
-        ainstValue(i);
-        raw("D=D+A");
+        if (segment.usesPointerArithmetic()) {
+            ainstValue(i);
+            raw("D=D+A");
+        }
         ainstSymbol("R13");
         assignDataRegisterToMemory();
         ainstSymbol("SP");
@@ -96,19 +100,21 @@ public class CodeWriter {
         assignDataRegisterToMemory();
     }
 
-    void push(Segment segment, int id) {
+    void push(Segment segment, int i) {
         if (segment == Segment.CONSTANT) {
-            ainstValue(id);
+            ainstValue(i);
             assignAddressRegisterToDataRegister();
         } else {
-            ainstSymbol(segment.symbol());
-            if (segment == Segment.TEMP) {
-                assignAddressRegisterToDataRegister();
-            } else { // local, argument
-                assignMemoryToDataRegister();
+            ainstSymbol(segment.memoryLocation(compilationUnitName, i));
+            if (segment.usesPointerArithmetic()) {
+                if (segment.usesBasePointer()) {     // local, argument
+                    assignMemoryToDataRegister();
+                } else { // static, temp
+                    assignAddressRegisterToDataRegister();
+                }
+                ainstValue(i);
+                incrementAddressRegisterByDataRegisterValue();
             }
-            ainstValue(id);
-            incrementAddressRegisterByDataRegisterValue();
             assignMemoryToDataRegister();
         }
         ainstSymbol("SP");
