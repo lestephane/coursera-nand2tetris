@@ -117,30 +117,50 @@ public class CodeWriter {
         assignDataRegisterToMemory();
     }
 
-    void op(String op) {
+    public void comparisonOperation(String opName) {
+        op(opName, "-", opName);
+    }
+
+    public void logicalOperation(String opName, String opOperator) {
+        op(opName, opOperator, "NE");
+    }
+
+    void op(String operationName, String opOperator, String opTrueJumpCondition) {
         pop(Segment.TEMP, 1);
-        String y = "@6"; // y comes from temp 1
+        final String y = "@6"; // y comes from temp 1
         pop(Segment.TEMP, 0);
-        String x = "@5"; // x comes from temp 0
-        String f = "@5"; // the result will be stored in temp 0
-        String operationLabel = op + opCounter;
-        String operationEndLabel = op + "END" + opCounter;
+        final String x = "@5"; // x comes from temp 0
+        final String f = "@5"; // the result will be stored in temp 0
+        final String operationLabel = operationName + opCounter;
+        final String operationEndLabel = operationName + "END" + opCounter;
         raw(x);
         raw("D=M");
         raw(y);
-        raw("D=D-M");
+        raw("D=D" + opOperator + "M");
         raw("@" + operationLabel);
-        raw("D;J" + op);
+        raw("D;J" + opTrueJumpCondition);
         raw("D=0");       // x != y
         raw("@" + operationEndLabel);
         raw("0;JMP");
         raw("(" + operationLabel + ")");     // x == y
-        raw("D=1");
+        raw("D=-1"); // result is true = 11111111
         raw("(" + operationEndLabel + ")");
         raw(f);        // temp[0] holds result
         raw("M=D");
         push(Segment.TEMP, 0);
         opCounter++;
+    }
+
+    public void atTemp(int i) {
+        ainstValue(5 + i);
+    }
+
+    public void negateMemory() {
+        output.println(assign().negatedM().toM());
+    }
+
+    public void binaryNotMemory() {
+        output.println(assign().notM().toM());
     }
 
     private class AssignmentOperationBuilder {
@@ -213,6 +233,16 @@ public class CodeWriter {
 
         public AssignmentOperationBuilder mMinusD() {
             from = "M-D";
+            return this;
+        }
+
+        public AssignmentOperationBuilder negatedM() {
+            from = "-M";
+            return this;
+        }
+
+        public AssignmentOperationBuilder notM() {
+            from = "!M";
             return this;
         }
     }

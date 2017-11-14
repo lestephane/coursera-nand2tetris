@@ -3,7 +3,7 @@ import java.io.IOException;
 public class Commands {
     public interface Command {
 
-        void translateTo(CodeWriter output) throws IOException;
+        void translateTo(CodeWriter o) throws IOException;
 
 
 
@@ -17,7 +17,6 @@ public class Commands {
     public static Command pushCommand(String line) {
         return new PushCommand(line);
     }
-
     public static Command popCommand(String line) {
         return new PopCommand(line);
     }
@@ -25,20 +24,37 @@ public class Commands {
     public static Command addCommand() {
         return new AddCommand();
     }
-
     public static Command eqCommand() {
         return new EqCommand();
     }
-
     public static Command gtCommand() {
         return new GreatherThanCommand();
+    }
+    public static Command ltCommand() {
+        return new LessThanCommand();
+    }
+
+    public static Command negCommand() {
+        return new NegateCommand();
+    }
+
+    public static Command notCommand() {
+        return new NotCommand();
+    }
+
+    public static Command andCommand() {
+        return new AndCommand();
+    }
+
+    public static Command orCommand() {
+        return new OrCommand();
     }
 
     public static Command subCommand() {
         return new SubtractCommand();
     }
-
     private static class CommentedCommand implements Command {
+
         private final String line;
         private final Command command;
 
@@ -47,9 +63,9 @@ public class Commands {
             this.command = command;
         }
 
-        public void translateTo(CodeWriter output) throws IOException {
-            output.printComment(line);
-            command.translateTo(output);
+        public void translateTo(CodeWriter o) throws IOException {
+            o.printComment(line);
+            command.translateTo(o);
         }
     }
 
@@ -60,8 +76,8 @@ public class Commands {
             this.line = line;
         }
 
-        public void translateTo(CodeWriter output) throws IOException {
-            output.printComment(this.line);
+        public void translateTo(CodeWriter o) throws IOException {
+            o.printComment(this.line);
         }
     }
 
@@ -75,8 +91,8 @@ public class Commands {
             id = Integer.parseInt(parts[2]);
         }
 
-        public void translateTo(CodeWriter output) {
-            output.push(segment, id);
+        public void translateTo(CodeWriter o) {
+            o.push(segment, id);
         }
 
     }
@@ -98,70 +114,77 @@ public class Commands {
 
     private static class AddCommand implements Command {
         @Override
-        public void translateTo(CodeWriter output) throws IOException {
-            new PopCommand("pop temp 0").translateTo(output);
-            new PopCommand("pop temp 1").translateTo(output);
-            output.ainstValue(6); // tmp[1]
-            output.assignMemoryToDataRegister();
-            output.ainstValue(5); // tmp[0]
-            output.incrementMemoryByDataRegisterValue();
-            new PushCommand("push temp 0").translateTo(output);
+        public void translateTo(CodeWriter o) throws IOException {
+            new PopCommand("pop temp 0").translateTo(o);
+            new PopCommand("pop temp 1").translateTo(o);
+            o.ainstValue(6); // tmp[1]
+            o.assignMemoryToDataRegister();
+            o.ainstValue(5); // tmp[0]
+            o.incrementMemoryByDataRegisterValue();
+            new PushCommand("push temp 0").translateTo(o);
         }
     }
 
     private static class SubtractCommand implements Command {
         @Override
-        public void translateTo(CodeWriter output) throws IOException {
-            new PopCommand("pop temp 0").translateTo(output);
-            new PopCommand("pop temp 1").translateTo(output);
-            output.ainstValue(5); // tmp[0]
-            output.assignMemoryToDataRegister();
-            output.ainstValue(6); // tmp[1]
-            output.decrementMemoryByDataRegisterValue();
-            new PushCommand("push temp 1").translateTo(output);
+        public void translateTo(CodeWriter o) throws IOException {
+            new PopCommand("pop temp 0").translateTo(o);
+            new PopCommand("pop temp 1").translateTo(o);
+            o.ainstValue(5); // tmp[0]
+            o.assignMemoryToDataRegister();
+            o.ainstValue(6); // tmp[1]
+            o.decrementMemoryByDataRegisterValue();
+            new PushCommand("push temp 1").translateTo(o);
         }
     }
 
     private static class EqCommand implements Command {
-        private static int globalEqCounter = 0;
-        private final int myEqCounter;
-
-        public EqCommand() {
-            this.myEqCounter = globalEqCounter++;
-        }
-
-        @Override
         public void translateTo(CodeWriter o) throws IOException {
-            new PopCommand("pop temp 1").translateTo(o);
-            new PopCommand("pop temp 0").translateTo(o);
-            String x = "@5"; // x comes from temp 0
-            String y = "@6"; // y comes from temp 1
-            String f = "@5"; // where the result is stored
-            String eqLabel = "EQ" + myEqCounter;
-            String eqEndLabel = "EQEND" + myEqCounter;
-            o.raw(x);
-            o.raw("D=M");
-            o.raw(y);
-            o.raw("D=D-M");
-            o.raw("@" + eqLabel);
-            o.raw("D;JEQ");
-            o.raw("D=0");       // x != y
-            o.raw("@" + eqEndLabel);
-            o.raw("0;JMP");
-            o.raw("(" + eqLabel + ")");     // x == y
-            o.raw("D=1");
-            o.raw("(" + eqEndLabel + ")");
-            o.raw(f);        // temp[0] holds result
-            o.raw("M=D");
-            new PushCommand("push temp 0").translateTo(o);
+            o.comparisonOperation("EQ");
         }
 
     }
 
     private static class GreatherThanCommand implements Command {
-        @Override
         public void translateTo(CodeWriter o) throws IOException {
-            o.op("GT");
+            o.comparisonOperation("GT");
         }
+    }
+
+    private static class LessThanCommand implements Command {
+        public void translateTo(CodeWriter o) throws IOException {
+            o.comparisonOperation("LT");
+        }
+    }
+
+    private static class NegateCommand implements Command {
+        public void translateTo(CodeWriter o) throws IOException {
+            o.pop(Segment.TEMP, 0);
+            o.atTemp(0);
+            o.negateMemory();
+            o.push(Segment.TEMP, 0);
+        }
+    }
+
+    private static class NotCommand implements Command {
+        public void translateTo(CodeWriter o) throws IOException {
+            o.pop(Segment.TEMP, 0);
+            o.atTemp(0);
+            o.binaryNotMemory();
+            o.push(Segment.TEMP , 0);
+        }
+    }
+
+    private static class AndCommand implements Command {
+        public void translateTo(CodeWriter o) throws IOException {
+            o.logicalOperation("AND", "&");
+        }
+
+    }
+    private static class OrCommand implements Command {
+        public void translateTo(CodeWriter o) throws IOException {
+            o.logicalOperation("OR", "|");
+        }
+
     }
 }

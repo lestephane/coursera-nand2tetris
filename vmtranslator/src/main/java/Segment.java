@@ -1,15 +1,17 @@
 enum Segment {
-    LOCAL("LCL"),
-    ARGUMENT("ARG"),
-    THAT("THAT"),
-    THIS("THIS"),
-    TEMP("5"),
-    CONSTANT(null);
+    LOCAL("LCL", true),
+    ARGUMENT("ARG", true),
+    THAT("THAT", true),
+    THIS("THIS", true),
+    TEMP("5", false),
+    CONSTANT("", false);
 
     private final String symbol;
+    private final boolean usesBasePointer;
 
-    Segment(String symbol) {
+    Segment(String symbol, boolean usesBasePointer) {
         this.symbol = symbol;
+        this.usesBasePointer = usesBasePointer;
     }
 
     public static Segment forName(String segmentName) {
@@ -21,7 +23,6 @@ enum Segment {
     }
 
     public boolean usesBasePointer() {
-        // temp is the only segment that does not use a base pointer
-        return this != TEMP;
+        return this.usesBasePointer;
     }
 }

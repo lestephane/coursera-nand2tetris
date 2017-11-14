@@ -43,6 +43,16 @@ public class Parser {
             return Commands.commented(originalLine, Commands.eqCommand());
         } else if (originalLine.equals("gt")) {
             return Commands.commented(originalLine, Commands.gtCommand());
+        } else if (originalLine.equals("lt")) {
+            return Commands.commented(originalLine, Commands.ltCommand());
+        } else if (originalLine.equals("neg")) {
+            return Commands.commented(originalLine, Commands.negCommand());
+        } else if (originalLine.equals("not")) {
+            return Commands.commented(originalLine, Commands.notCommand());
+        } else if (originalLine.equals("and")) {
+            return Commands.commented(originalLine, Commands.andCommand());
+        } else if (originalLine.equals("or")) {
+            return Commands.commented(originalLine, Commands.orCommand());
         } else if (!originalLine.isEmpty()){
             return Commands.comment("UNSUPPORTED: " + originalLine);
         } else {

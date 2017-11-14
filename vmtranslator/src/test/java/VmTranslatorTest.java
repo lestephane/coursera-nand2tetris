@@ -1,14 +1,17 @@
 import org.junit.Test;
 
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 public class VmTranslatorTest {
+    private VmTranslatorTestBuilder GivenSourceCode(String line) {
+        return new VmTranslatorTestBuilder(line);
+    }
+
+    private VmTranslatorTestBuilder GivenSourceCode(String ... lines) {
+        return new VmTranslatorTestBuilder(String.join("\n", lines));
+    }
+
     @Test
     public void emptyFile() {
         GivenSourceCode("")
@@ -139,200 +142,31 @@ public class VmTranslatorTest {
                 });
     }
 
-    private VmTranslatorTestBuilder GivenSourceCode(String line) {
-        return new VmTranslatorTestBuilder(line);
+    @Test
+    public void lt() {
+        GivenSourceCode("lt", "lt")
+                .ThenTheTranslatedCommandsAre((cmds) -> {
+                    cmds.lt(0);
+                    cmds.lt(1);
+                });
     }
 
-    private VmTranslatorTestBuilder GivenSourceCode(String ... lines) {
-        return new VmTranslatorTestBuilder(String.join("\n", lines));
+
+    @Test
+    public void unaryOperations() {
+        GivenSourceCode("neg", "not")
+                .ThenTheTranslatedCommandsAre((cmds) -> {
+                    cmds.neg();
+                    cmds.not();
+                });
     }
 
-    private class VmTranslatorTestBuilder {
-
-        private final String input;
-
-        public VmTranslatorTestBuilder(String input) {
-            this.input = input;
-        }
-
-        public void ThenTheTranslatedOutputIs(String output) {
-            assertThat(translatedOutputForInput(input), is(output));
-        }
-
-        private String translatedOutputForInput(String input) {
-            StringWriter output = new StringWriter();
-            new VmTranslator(input).translateTo(output);
-            return output.toString();
-        }
-
-        private void ThenTheTranslatedCommandsAre(
-                Consumer<HackAssemblerCommandsAsserter> cmdConsumer) {
-            final HackAssemblerCommandsAsserter cmds = new HackAssemblerCommandsAsserter();
-            final String output = translatedOutputForInput(input);
-
-            int lineNumber = 1;
-            for (String s : List.<String>of(output.split("\n"))) {
-                cmds.add(new HackAssemblerCommandAsserter(lineNumber++, s.trim()));
-            }
-
-            cmdConsumer.accept(cmds);
-        }
-    }
-
-    public static class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerCommandAsserter> {
-        private int pos;
-        private int eqTestCount;
-
-        public HackAssemblerCommandsAsserter() {
-            this.pos = 0;
-            this.eqTestCount = 0;
-        }
-
-        public void popsToLocal(int i) {
-            popsToWithLeadingComment(Segment.LOCAL, i);
-        }
-
-        public void popsToArgument(int i) {
-            popsToWithLeadingComment(Segment.ARGUMENT, i);
-        }
-
-        public void popsToThis(int i) {
-            popsToWithLeadingComment(Segment.THIS, i);
-        }
-
-        public void popsToThat(int i) {
-            popsToWithLeadingComment(Segment.THAT, i);
-        }
-
-        public void popsToTemp(int i) {
-            popsToWithLeadingComment(Segment.TEMP, i);
-        }
-
-        private void popsToTempWithoutLeadingComment(int i) {
-            popsTo(Segment.TEMP, i);
-        }
-
-        private void popsToWithLeadingComment(Segment segment, int i) {
-            get(pos++).isCode("// pop " + segment.name().toLowerCase() + " " + i);
-            popsTo(segment, i);
-        }
-
-        private void popsTo(Segment segment, int i) {
-            get(pos++).isCode("@" + segment.symbol());
-            get(pos++).isCode(segment.usesBasePointer()? "D=M" : "D=A");
-            get(pos++).isCode("@" + i);
-            get(pos++).isCode("D=D+A");
-            get(pos++).isCode("@R13");
-            get(pos++).isCode("M=D");
-            get(pos++).isCode("@SP");
-            get(pos++).isCode("AM=M-1");
-            get(pos++).isCode("D=M");
-            get(pos++).isCode("@R13");
-            get(pos++).isCode("A=M");
-            get(pos++).isCode("M=D");
-        }
-
-        public void pushesTempWithLeadingComment(int i) {
-            pushesFromWithLeadingComment(Segment.TEMP, i);
-        }
-
-        private void pushesTempWithoutLeadingComment(int i) {
-            pushesFrom(Segment.TEMP, i);
-        }
-
-        public void pushesFromThis(int i) {
-            pushesFromWithLeadingComment(Segment.THIS, i);
-        }
-
-        public void pushesFromThat(int i) {
-            pushesFromWithLeadingComment(Segment.THAT, i);
-        }
-
-        public void pushesFromArgument(int i) {
-            pushesFromWithLeadingComment(Segment.ARGUMENT, i);
-        }
-
-        private void pushesFromWithLeadingComment(Segment segment, int i) {
-            get(pos++).isCode("// push " + segment.name().toLowerCase() + " " + i);
-            pushesFrom(segment, i);
-        }
-
-        private void pushesFrom(Segment segment, int i) {
-            get(pos++).isCode("@" + segment.symbol());
-            get(pos++).isCode(segment.usesBasePointer()? "D=M" : "D=A");
-            get(pos++).isCode("@" + i);
-            get(pos++).isCode("A=D+A");
-            get(pos++).isCode("D=M");
-            get(pos++).isCode("@SP");
-            get(pos++).isCode("AM=M+1");
-            get(pos++).isCode("A=A-1");
-            get(pos++).isCode("M=D");
-        }
-
-        public void adds() {
-            get(pos++).isCode("// add");
-            popsToTempWithoutLeadingComment(0);
-            popsToTempWithoutLeadingComment(1);
-            get(pos++).isCode("@6");
-            get(pos++).isCode("D=M");
-            get(pos++).isCode("@5");
-            get(pos++).isCode("M=D+M");
-            pushesTempWithoutLeadingComment(0);
-        }
-
-        public void subtracts() {
-            get(pos++).isCode("// sub");
-            popsToTempWithoutLeadingComment(0);
-            popsToTempWithoutLeadingComment(1);
-            get(pos++).isCode("@5");
-            get(pos++).isCode("D=M");
-            get(pos++).isCode("@6");
-            get(pos++).isCode("M=M-D");
-            pushesTempWithoutLeadingComment(1);
-        }
-
-        public void eq(int opCounter) {
-            performsComparisonOperation(opCounter, "EQ");
-        }
-
-        private void performsComparisonOperation(int opCounter, String op) {
-            get(pos++).isCode("// " + op.toLowerCase());
-            popsToTempWithoutLeadingComment(1);
-            popsToTempWithoutLeadingComment(0);
-            get(pos++).isCode("@5");        // x
-            get(pos++).isCode("D=M");
-            get(pos++).isCode("@6");        // y
-            get(pos++).isCode("D=D-M");
-            get(pos++).isCode("@" + op + opCounter);
-            get(pos++).isCode("D;J" + op);
-            get(pos++).isCode("D=0");       // x != y
-            get(pos++).isCode("@" + op + "END" + opCounter);
-            get(pos++).isCode("0;JMP");
-            get(pos++).isCode("(" + op + opCounter + ")");     // x == y
-            get(pos++).isCode("D=1");
-            get(pos++).isCode("(" + op + "END" + opCounter + ")");
-            get(pos++).isCode("@5");        // temp[0] holds result
-            get(pos++).isCode("M=D");
-            pushesTempWithoutLeadingComment(0);
-            eqTestCount ++;
-        }
-
-        public void gt(int opCounter) {
-            performsComparisonOperation(opCounter, "GT");
-        }
-    }
-
-    private class HackAssemblerCommandAsserter {
-        private final int lineNumber;
-
-        private final String code;
-
-        private HackAssemblerCommandAsserter(int lineNumber, String code) {
-            this.code = code;
-            this.lineNumber = lineNumber;
-        }
-        public void isCode(String expectedCode) {
-            assertThat("code at line number " + lineNumber, this.code, is(expectedCode));
-        }
+    @Test
+    public void logicalOperations() {
+        GivenSourceCode("and", "or")
+                .ThenTheTranslatedCommandsAre((cmds) -> {
+                    cmds.and(0);
+                    cmds.or(1);
+                });
     }
 }
