@@ -201,10 +201,11 @@ public class VMTranslatorTest {
 
     @Test
     public void label() {
-        GivenSourceCode("label LOOP_START", "if-goto LOOP_START")
+        GivenSourceCode("label L1", "if-goto L2", "goto L3")
                 .ThenTheTranslatedCommandsAre((asm) -> {
-                    asm.label("LOOP_START");
-                    asm.ifGoto("LOOP_START");
+                    asm.label("L1");
+                    asm.ifGoto("L2");
+                    asm.goTo("L3");
                 });
     }
 }

@@ -291,6 +291,12 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
         asm("D;JNE");
     }
 
+    public void goTo(String label) {
+        asm("// goto " + label);
+        asm("@" + label);
+        asm("0;JMP");
+    }
+
     void comment(String expectedComment) {
         asm(expectedComment);
     }

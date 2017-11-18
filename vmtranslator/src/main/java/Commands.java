@@ -4,14 +4,15 @@ public class Commands {
     public interface Command {
 
         void translateTo(CodeWriter o) throws IOException;
+
     }
     public static Command comment(String line) {
         return new Comment(line);
     }
-
     public static Command commented(String originalLine, Command command) {
         return new CommentedCommand(originalLine, command);
     }
+
     public static Command pushCommand(String line) {
         return new PushCommand(line);
     }
@@ -24,10 +25,10 @@ public class Commands {
     public static Command eqCommand() {
         return new EqCommand();
     }
-
     public static Command gtCommand() {
         return new GreatherThanCommand();
     }
+
     public static Command ltCommand() {
         return new LessThanCommand();
     }
@@ -37,7 +38,6 @@ public class Commands {
     public static Command notCommand() {
         return new NotCommand();
     }
-
     public static Command andCommand() {
         return new AndCommand();
     }
@@ -54,11 +54,15 @@ public class Commands {
         return new LabelCommand(line);
     }
 
+    public static Command goTo(String line) {
+        return new GotoCommand(line);
+    }
+
     public static Command ifGoto(String line) {
         return new IfGotoCommand(line);
     }
-
     private static class CommentedCommand implements Command {
+
 
 
         private final String line;
@@ -217,6 +221,18 @@ public class Commands {
             o.popToDataRegister();
             o.jumpIfDataRegisterIsTruthy(name);
         }
+    }
 
+    private static class GotoCommand implements Command {
+        private final String name;
+
+        public GotoCommand(String line) {
+            name = line.split(" ")[1];
+        }
+
+        public void translateTo(CodeWriter o) throws IOException {
+            o.ainstSymbol(name);
+            o.jump();
+        }
     }
 }

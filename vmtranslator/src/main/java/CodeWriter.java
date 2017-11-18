@@ -177,6 +177,10 @@ public class CodeWriter {
         jumpIfDataRegister("NE", label); // truthy is the same as != 0
     }
 
+    public void jump() {
+        raw("D;JMP");
+    }
+
     public void atTemp(int i) {
         ainstValue(5 + i);
     }

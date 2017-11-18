@@ -8,7 +8,7 @@ public class VMTranslator {
         try {
             LogManager.getLogManager().readConfiguration(new ByteArrayInputStream((
                     "handlers=java.util.logging.ConsoleHandler\n" +
-                    ".level=FINE\n" +
+                    ".level=WARNING\n" +
                     "java.util.logging.ConsoleHandler.level=FINE\n" +
                     "java.util.logging.ConsoleHandler.formatter=java.util.logging.SimpleFormatter\n" +
                     "java.util.logging.SimpleFormatter.format=[%1$tF %1$tr] %3$s %4$s:  %5$s %n").getBytes()));
