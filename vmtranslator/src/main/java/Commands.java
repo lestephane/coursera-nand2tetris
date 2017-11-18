@@ -4,13 +4,11 @@ public class Commands {
     public interface Command {
 
         void translateTo(CodeWriter o) throws IOException;
-
-
-
     }
     public static Command comment(String line) {
         return new Comment(line);
     }
+
     public static Command commented(String originalLine, Command command) {
         return new CommentedCommand(originalLine, command);
     }
@@ -20,24 +18,22 @@ public class Commands {
     public static Command popCommand(String line) {
         return new PopCommand(line);
     }
-
     public static Command addCommand() {
         return new AddCommand();
     }
     public static Command eqCommand() {
         return new EqCommand();
     }
+
     public static Command gtCommand() {
         return new GreatherThanCommand();
     }
     public static Command ltCommand() {
         return new LessThanCommand();
     }
-
     public static Command negCommand() {
         return new NegateCommand();
     }
-
     public static Command notCommand() {
         return new NotCommand();
     }
@@ -53,7 +49,17 @@ public class Commands {
     public static Command subCommand() {
         return new SubtractCommand();
     }
+
+    public static Command labelCommand(String line) {
+        return new LabelCommand(line);
+    }
+
+    public static Command ifGoto(String line) {
+        return new IfGotoCommand(line);
+    }
+
     private static class CommentedCommand implements Command {
+
 
         private final String line;
         private final Command command;
@@ -184,6 +190,32 @@ public class Commands {
     private static class OrCommand implements Command {
         public void translateTo(CodeWriter o) throws IOException {
             o.logicalOperation("|");
+        }
+
+    }
+
+    private static class LabelCommand implements Command {
+        private final String name;
+
+        public LabelCommand(String line) {
+            name = line.split(" ")[1];
+        }
+
+        public void translateTo(CodeWriter o) throws IOException {
+            o.label(name);
+        }
+    }
+
+    private static class IfGotoCommand implements Command {
+        private final String name;
+
+        public IfGotoCommand(String line) {
+            name = line.split(" ")[1];
+        }
+
+        public void translateTo(CodeWriter o) throws IOException {
+            o.popToDataRegister();
+            o.jumpIfDataRegisterIsTruthy(name);
         }
 
     }

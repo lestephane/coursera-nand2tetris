@@ -22,7 +22,7 @@ public class VMTranslatorTest {
     public void comment() {
         GivenSourceCode("// comment")
                 .ThenTheTranslatedCommandsAre((cmds) -> {
-                    cmds.get(0).isCode("// // comment");
+                    cmds.comment("// // comment");
                 });
         }
 
@@ -76,8 +76,11 @@ public class VMTranslatorTest {
 
     @Test
     public void popToLocal() {
-        GivenSourceCode("pop local 0")
-                .ThenTheTranslatedCommandsAre((cmds) -> cmds.popsToLocal(0));
+        GivenSourceCode("pop local 0", "pop local 1 // ignore this")
+                .ThenTheTranslatedCommandsAre((cmds) -> {
+                    cmds.popsToLocal(0);
+                    cmds.popsToLocal(1);
+                });
     }
 
     @Test
@@ -193,6 +196,15 @@ public class VMTranslatorTest {
                 .ThenTheTranslatedCommandsAre((cmds) -> {
                     cmds.popsThat();
                     cmds.popsThis();
+                });
+    }
+
+    @Test
+    public void label() {
+        GivenSourceCode("label LOOP_START", "if-goto LOOP_START")
+                .ThenTheTranslatedCommandsAre((asm) -> {
+                    asm.label("LOOP_START");
+                    asm.ifGoto("LOOP_START");
                 });
     }
 }

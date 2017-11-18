@@ -100,6 +100,12 @@ public class CodeWriter {
         assignDataRegisterToMemory();
     }
 
+    void popToDataRegister() {
+        pop(Segment.TEMP, 0);
+        atTemp(0);
+        raw("D=M");
+    }
+
     void push(Segment segment, int i) {
         if (segment == Segment.CONSTANT) {
             ainstValue(i);
@@ -124,7 +130,7 @@ public class CodeWriter {
     }
 
     public void comparisonOperation(String opName) {
-        op(opName, "-", opName);
+        comp(opName, "-", opName);
     }
 
     public void logicalOperation(String opOperator) {
@@ -137,7 +143,7 @@ public class CodeWriter {
         push(Segment.TEMP, 0);
     }
 
-    void op(String operationName, String opOperator, String opTrueJumpCondition) {
+    void comp(String operationName, String opOperator, String opTrueJumpCondition) {
         pop(Segment.TEMP, 1);
         final String y = "@6"; // y comes from temp 1
         pop(Segment.TEMP, 0);
@@ -149,8 +155,7 @@ public class CodeWriter {
         raw("D=M");
         raw(y);
         raw("D=D" + opOperator + "M");
-        raw("@" + operationLabel);
-        raw("D;J" + opTrueJumpCondition);
+        jumpIfDataRegister(opTrueJumpCondition, operationLabel);
         raw("D=0");       // x != y
         raw("@" + operationEndLabel);
         raw("0;JMP");
@@ -163,6 +168,15 @@ public class CodeWriter {
         opCounter++;
     }
 
+    private void jumpIfDataRegister(String opTrueJumpCondition, String operationLabel) {
+        raw("@" + operationLabel);
+        raw("D;J" + opTrueJumpCondition);
+    }
+
+    void jumpIfDataRegisterIsTruthy(String label) {
+        jumpIfDataRegister("NE", label); // truthy is the same as != 0
+    }
+
     public void atTemp(int i) {
         ainstValue(5 + i);
     }
@@ -173,6 +187,10 @@ public class CodeWriter {
 
     public void binaryNotMemory() {
         output.println(assign().notM().toM());
+    }
+
+    public void label(String name) {
+        output.println(String.format("(%s)", name));
     }
 
     private class AssignmentOperationBuilder {

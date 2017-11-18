@@ -277,6 +277,20 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
         assertThat("there should be no asm command left", pos, is(equalTo(this.size())));
     }
 
+    public void label(String name) {
+        asm("// label " + name);
+        asm(String.format("(%s)", name));
+    }
+
+    public void ifGoto(String label) {
+        asm("// if-goto " + label);
+        popsToTempWithoutLeadingComment(0);
+        asm("@5");
+        asm("D=M");
+        asm("@" + label);
+        asm("D;JNE");
+    }
+
     void comment(String expectedComment) {
         asm(expectedComment);
     }
