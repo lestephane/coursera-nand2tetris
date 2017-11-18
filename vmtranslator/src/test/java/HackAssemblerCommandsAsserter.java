@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -35,34 +36,34 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
     }
 
     private void popsToWithLeadingComment(Segment segment, int i) {
-        get(pos++).isCode("// pop " + segment.name().toLowerCase() + " " + i);
+        asm("// pop " + segment.name().toLowerCase() + " " + i);
         popsTo(segment, i);
     }
 
     public void popsToStatic(int i) {
-        get(pos++).isCode("// pop static " + i);
-        get(pos++).isCode("@Junit." + i);
-        get(pos++).isCode("D=A");
+        asm("// pop static " + i);
+        asm("@Junit." + i);
+        asm("D=A");
         popToAddressPointedToByDataRegister();
     }
 
     private void popToAddressPointedToByDataRegister() {
-        get(pos++).isCode("@R13");
-        get(pos++).isCode("M=D");
-        get(pos++).isCode("@SP");
-        get(pos++).isCode("AM=M-1");
-        get(pos++).isCode("D=M");
-        get(pos++).isCode("@R13");
-        get(pos++).isCode("A=M");
-        get(pos++).isCode("M=D");
+        asm("@R13");
+        asm("M=D");
+        asm("@SP");
+        asm("AM=M-1");
+        asm("D=M");
+        asm("@R13");
+        asm("A=M");
+        asm("M=D");
     }
 
     private void popsTo(Segment segment, int i) {
-        get(pos++).isCode("@" + segment.memoryLocation("Junit", i));
-        get(pos++).isCode(segment.usesBasePointer()? "D=M" : "D=A");
+        asm("@" + segment.memoryLocation("Junit", i));
+        asm(segment.usesBasePointer()? "D=M" : "D=A");
         if (segment.usesPointerArithmetic()) {
-            get(pos++).isCode("@" + i);
-            get(pos++).isCode("D=D+A");
+            asm("@" + i);
+            asm("D=D+A");
         }
         popToAddressPointedToByDataRegister();
     }
@@ -88,14 +89,14 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
     }
 
     public void pushFromStatic(int i) {
-        get(pos++).isCode("// push static " + i);
-        get(pos++).isCode("@" + Segment.STATIC.memoryLocation("Junit", i));
-        get(pos++).isCode("D=M");
+        asm("// push static " + i);
+        asm("@" + Segment.STATIC.memoryLocation("Junit", i));
+        asm("D=M");
         pushDataRegister();
     }
 
     private void pushesFromWithLeadingCommentGeneric(Segment segment, int i) {
-        get(pos++).isCode("// push " + segment.name().toLowerCase() + " " + i);
+        asm("// push " + segment.name().toLowerCase() + " " + i);
         pushesFrom(segment, i);
     }
 
@@ -116,57 +117,57 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
     }
 
     void pushesConstant(int i) {
-        get(0).isCode("// push constant " + i);
-        get(1).isCode("@" + i);
-        get(2).isCode("D=A");
-        get(3).isCode("@SP");
-        get(4).isCode("AM=M+1");
-        get(5).isCode("A=A-1");
-        get(6).isCode("M=D");
+        asm("// push constant " + i);
+        asm("@" + i);
+        asm("D=A");
+        asm("@SP");
+        asm("AM=M+1");
+        asm("A=A-1");
+        asm("M=D");
     }
 
     private void pushesFrom(Segment segment, int i) {
         if (segment == Segment.CONSTANT) {
-            get(pos++).isCode("@" + i);
-            get(pos++).isCode("D=A");
+            asm("@" + i);
+            asm("D=A");
         } else {
-            get(pos++).isCode("@" + segment.memoryLocation("Junit", i));
+            asm("@" + segment.memoryLocation("Junit", i));
             if (segment.usesPointerArithmetic()) {
-                get(pos++).isCode(segment.usesBasePointer() ? "D=M" : "D=A");
-                get(pos++).isCode("@" + i);
-                get(pos++).isCode("A=D+A");
+                asm(segment.usesBasePointer() ? "D=M" : "D=A");
+                asm("@" + i);
+                asm("A=D+A");
             }
-            get(pos++).isCode("D=M");
+            asm("D=M");
         }
         pushDataRegister();
     }
 
     private void pushDataRegister() {
-        get(pos++).isCode("@SP");
-        get(pos++).isCode("AM=M+1");
-        get(pos++).isCode("A=A-1");
-        get(pos++).isCode("M=D");
+        asm("@SP");
+        asm("AM=M+1");
+        asm("A=A-1");
+        asm("M=D");
     }
 
     public void adds() {
-        get(pos++).isCode("// add");
+        asm("// add");
         popsToTempWithoutLeadingComment(0);
         popsToTempWithoutLeadingComment(1);
-        get(pos++).isCode("@6");
-        get(pos++).isCode("D=M");
-        get(pos++).isCode("@5");
-        get(pos++).isCode("M=D+M");
+        asm("@6");
+        asm("D=M");
+        asm("@5");
+        asm("M=D+M");
         pushesTempWithoutLeadingComment(0);
     }
 
     public void subtracts() {
-        get(pos++).isCode("// sub");
+        asm("// sub");
         popsToTempWithoutLeadingComment(0);
         popsToTempWithoutLeadingComment(1);
-        get(pos++).isCode("@5");
-        get(pos++).isCode("D=M");
-        get(pos++).isCode("@6");
-        get(pos++).isCode("M=M-D");
+        asm("@5");
+        asm("D=M");
+        asm("@6");
+        asm("M=M-D");
         pushesTempWithoutLeadingComment(1);
     }
 
@@ -175,7 +176,7 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
     }
 
     private void performsComparisonOperationWithLeadingComment(int opCounter, String op) {
-        get(pos++).isCode("// " + op.toLowerCase());
+        asm("// " + op.toLowerCase());
         performsComparisonOperation(opCounter, op);
     }
 
@@ -190,20 +191,20 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
 
         popsToTempWithoutLeadingComment(1);
         popsToTempWithoutLeadingComment(0);
-        get(pos++).isCode("@5");        // x
-        get(pos++).isCode("D=M");
-        get(pos++).isCode("@6");        // y
-        get(pos++).isCode("D=D" + operator + "M");
-        get(pos++).isCode("@" + opName + opCounter);
-        get(pos++).isCode("D;J" + jumpCondition);
-        get(pos++).isCode("D=0");       // x != y
-        get(pos++).isCode("@" + opName + "END" + opCounter);
-        get(pos++).isCode("0;JMP");
-        get(pos++).isCode("(" + opName + opCounter + ")");     // x == y
-        get(pos++).isCode("D=-1");
-        get(pos++).isCode("(" + opName + "END" + opCounter + ")");
-        get(pos++).isCode("@5");        // temp[0] holds result
-        get(pos++).isCode("M=D");
+        asm("@5");        // x
+        asm("D=M");
+        asm("@6");        // y
+        asm("D=D" + operator + "M");
+        asm("@" + opName + opCounter);
+        asm("D;J" + jumpCondition);
+        asm("D=0");       // x != y
+        asm("@" + opName + "END" + opCounter);
+        asm("0;JMP");
+        asm("(" + opName + opCounter + ")");     // x == y
+        asm("D=-1");
+        asm("(" + opName + "END" + opCounter + ")");
+        asm("@5");        // temp[0] holds result
+        asm("M=D");
         pushesTempWithoutLeadingComment(0);
     }
 
@@ -220,10 +221,10 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
     }
 
     private void unaryOp(String opName, String operator) {
-        get(pos++).isCode("// " + opName);
+        asm("// " + opName);
         popsToTempWithoutLeadingComment(0);
-        get(pos++).isCode("@5");
-        get(pos++).isCode("M=" + operator + "M");
+        asm("@5");
+        asm("M=" + operator + "M");
         pushesTempWithoutLeadingComment(0);
     }
 
@@ -236,13 +237,13 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
     }
 
     private void dualLogicalOp(int opCounter, String op, String operator) {
-        get(pos++).isCode("// " + op.toLowerCase());
+        asm("// " + op.toLowerCase());
         popsToTempWithoutLeadingComment(0);
         popsToTempWithoutLeadingComment(1);
-        get(pos++).isCode("@6");        // x
-        get(pos++).isCode("D=M");
-        get(pos++).isCode("@5");        // y
-        get(pos++).isCode("M=D" + operator + "M");
+        asm("@6");        // x
+        asm("D=M");
+        asm("@5");        // y
+        asm("M=D" + operator + "M");
         pushesTempWithoutLeadingComment(0);
     }
 
@@ -255,16 +256,29 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
     }
 
     void pushesLocal(int i) {
-        get(0).isCode("// push local " + i);
-        get(1).isCode("@LCL");
-        get(2).isCode("D=M");
-        get(3).isCode("@" + i);
-        get(4).isCode("A=D+A");
-        get(5).isCode("D=M");
-        get(6).isCode("@SP");
-        get(7).isCode("AM=M+1");
-        get(8).isCode("A=A-1");
-        get(9).isCode("M=D");
+        final String expectedCode = "// push local " + i;
+        asm(expectedCode);
+        asm("@LCL");
+        asm("D=M");
+        asm("@" + i);
+        asm("A=D+A");
+        asm("D=M");
+        asm("@SP");
+        asm("AM=M+1");
+        asm("A=A-1");
+        asm("M=D");
+    }
+
+    private void asm(String expectedCode) {
+        get(pos++).isCode(expectedCode);
+    }
+
+    public void nothingLeft() {
+        assertThat("there should be no asm command left", pos, is(equalTo(this.size())));
+    }
+
+    void comment(String expectedComment) {
+        asm(expectedComment);
     }
 
     class HackAssemblerCommandAsserter {

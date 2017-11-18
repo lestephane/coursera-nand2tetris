@@ -44,6 +44,7 @@ class VMTranslatorTestBuilder {
         }
 
         asmConsumer.accept(cmds);
+        cmds.nothingLeft();
     }
 
     public void ThenTheResultingExecutionStateIs(Consumer<ExecutionEnvironmentAsserter> execConsumer) {
