@@ -10,6 +10,7 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -39,7 +40,7 @@ class VMTranslatorTestBuilder {
         final HackAssemblerCommandsAsserter cmds = new HackAssemblerCommandsAsserter();
         final String output = translatedOutputForInput(vmCode);
 
-        for (String s : List.<String>of(output.split("\n"))) {
+        for (String s : Arrays.asList(output.split("\n"))) {
             cmds.addLine(s.trim());
         }
 
@@ -50,7 +51,7 @@ class VMTranslatorTestBuilder {
     public void ThenTheResultingExecutionStateIs(Consumer<ExecutionEnvironmentAsserter> execConsumer) {
         try(TemporaryAsmFile tmpFile = new TemporaryAsmFile()) {
             final String translatedCode = translatedOutputForInput(vmCode);
-            Files.write(tmpFile.getFile(), List.of(translatedCode));
+            Files.write(tmpFile.getFile(), Arrays.asList(translatedCode));
             runProgram(tmpFile, execConsumer);
         } catch (IOException ioe){
             throw new UncheckedIOException(ioe);

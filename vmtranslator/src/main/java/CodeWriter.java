@@ -178,7 +178,7 @@ public class CodeWriter {
     }
 
     public void jump() {
-        raw("D;JMP");
+        raw("0;JMP");
     }
 
     public void atTemp(int i) {
