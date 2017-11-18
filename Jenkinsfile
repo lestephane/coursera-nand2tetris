@@ -3,7 +3,9 @@ pipeline {
     stages {
         stage('Gradle Test') {
             steps {
-                sh 'gradle test'
+                dir ('vmtranslator') {
+                    sh 'gradle test'
+                }
             }
         }
     }
