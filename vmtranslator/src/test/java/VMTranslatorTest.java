@@ -23,7 +23,7 @@ public class VMTranslatorTest {
     public void comment() {
         GivenSourceCode("// comment")
                 .ThenTheTranslatedCommandsAre((cmds) -> {
-                    cmds.comment("// // comment");
+                    cmds.comment("// comment");
                 });
         }
 
@@ -87,7 +87,7 @@ public class VMTranslatorTest {
     @Test
     public void popToArgument() {
         GivenSourceCode("pop argument 1")
-                .ThenTheTranslatedCommandsAre((cmds) -> cmds.popsToArgument(1));
+                .ThenTheTranslatedCommandsAre((cmds) -> cmds.popsStandardStackToArgAt(1));
     }
 
     @Test
@@ -211,7 +211,12 @@ public class VMTranslatorTest {
     }
 
     @Test
-    public void failing() {
-        fail("should fail my build");
+    public void emptyFunction() {
+        GivenSourceCode("function SimpleFunction.test 3", "return")
+                .ThenTheTranslatedCommandsAre((asm) -> {
+                    asm.functionStartWithArgCount("SimpleFunction.test", 3);
+                    asm.functionReturn();
+                });
     }
+
 }

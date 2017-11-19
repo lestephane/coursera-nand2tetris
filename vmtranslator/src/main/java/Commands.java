@@ -2,13 +2,13 @@ import java.io.IOException;
 
 public class Commands {
     public interface Command {
-
         void translateTo(CodeWriter o) throws IOException;
-
     }
+
     public static Command comment(String line) {
         return new Comment(line);
     }
+
     public static Command commented(String originalLine, Command command) {
         return new CommentedCommand(originalLine, command);
     }
@@ -16,15 +16,19 @@ public class Commands {
     public static Command pushCommand(String line) {
         return new PushCommand(line);
     }
+
     public static Command popCommand(String line) {
         return new PopCommand(line);
     }
+
     public static Command addCommand() {
         return new AddCommand();
     }
+
     public static Command eqCommand() {
         return new EqCommand();
     }
+
     public static Command gtCommand() {
         return new GreatherThanCommand();
     }
@@ -32,12 +36,15 @@ public class Commands {
     public static Command ltCommand() {
         return new LessThanCommand();
     }
+
     public static Command negCommand() {
         return new NegateCommand();
     }
+
     public static Command notCommand() {
         return new NotCommand();
     }
+
     public static Command andCommand() {
         return new AndCommand();
     }
@@ -61,10 +68,12 @@ public class Commands {
     public static Command ifGoto(String line) {
         return new IfGotoCommand(line);
     }
+
+    public static Command function(String line) {
+        return new FunctionCommand(line);
+    }
+
     private static class CommentedCommand implements Command {
-
-
-
         private final String line;
         private final Command command;
 
@@ -93,8 +102,8 @@ public class Commands {
 
     private static class PushCommand implements Command {
         private final int id;
-
         private final Segment segment;
+
         public PushCommand(String line) {
             final String[] parts = line.split(" ");
             segment = Segment.forName(parts[1]);
@@ -104,8 +113,8 @@ public class Commands {
         public void translateTo(CodeWriter o) {
             o.push(segment, id);
         }
-
     }
+
     private static class PopCommand implements Command {
         private final int i;
         private final Segment segment;
@@ -152,7 +161,6 @@ public class Commands {
         public void translateTo(CodeWriter o) throws IOException {
             o.comparisonOperation("EQ");
         }
-
     }
 
     private static class GreatherThanCommand implements Command {
@@ -181,7 +189,7 @@ public class Commands {
             o.pop(Segment.TEMP, 0);
             o.atTemp(0);
             o.binaryNotMemory();
-            o.push(Segment.TEMP , 0);
+            o.push(Segment.TEMP, 0);
         }
     }
 
@@ -189,13 +197,12 @@ public class Commands {
         public void translateTo(CodeWriter o) throws IOException {
             o.logicalOperation("&");
         }
-
     }
+
     private static class OrCommand implements Command {
         public void translateTo(CodeWriter o) throws IOException {
             o.logicalOperation("|");
         }
-
     }
 
     private static class LabelCommand implements Command {
@@ -233,6 +240,49 @@ public class Commands {
         public void translateTo(CodeWriter o) throws IOException {
             o.ainstSymbol(name);
             o.jump();
+        }
+    }
+
+    private static class FunctionCommand implements Command {
+        private final String name;
+        private final int nargs;
+
+        public FunctionCommand(String line) {
+            final String[] parts = line.split(" ");
+            this.name = parts[1];
+            this.nargs = Integer.parseInt(parts[2]);
+        }
+
+        public void translateTo(CodeWriter o) throws IOException {
+            o.label(name);
+            for (int i = 0; i < nargs; i++) {
+                o.push(Segment.CONSTANT, 0);
+            }
+        }
+    }
+
+    public static class ReturnCommand implements Command {
+        public void translateTo(CodeWriter o) throws IOException {
+            //popsToWithoutLeadingComment(Segment.ARGUMENT, 0);
+            o.pop(Segment.ARGUMENT, 0);
+            // setStandardStackPointerToAddressOfArg(1);
+            o.atSegment(Segment.ARGUMENT);
+            o.assignMemoryPlusOneToAddressRegister();
+            o.assignAddressRegisterToDataRegister();
+            o.ainstSymbol("SP");
+            o.assignDataRegisterToMemory();
+            // setTmp0ToMemoryOf("LCL");
+            o.atSegment(Segment.LOCAL);
+            o.assignMemoryToDataRegister();
+            o.atTemp(0);
+            o.assignDataRegisterToMemory();
+            // popsTmp0StackTo("THAT");
+            final String tmp0 = Segment.TEMP.memoryLocation(null, -1);
+            o.popUsingBasePointer(tmp0, Segment.POINTER, 1); // restore THAT
+            o.popUsingBasePointer(tmp0, Segment.POINTER, 0); // restore THIS
+            o.popUsingBasePointer(tmp0, Segment.ARGUMENT);
+            o.popUsingBasePointer(tmp0, Segment.LOCAL);
+            o.popUsingBasePointer(tmp0, Segment.PROGRAM_COUNTER);
         }
     }
 }

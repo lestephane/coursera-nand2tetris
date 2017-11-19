@@ -63,6 +63,10 @@ public class Parser {
             return Commands.commented(line, Commands.goTo(line));
         } else if (line.startsWith("if-goto")) {
             return Commands.commented(line, Commands.ifGoto(line));
+        } else if (line.startsWith("function")) {
+            return Commands.commented(line, Commands.function(line));
+        } else if (line.startsWith("return")) {
+            return Commands.commented(line, new Commands.ReturnCommand());
         } else if (!line.isEmpty()){
             LOGGER.warning(()-> "unsupported: " + line);
             return Commands.comment("UNSUPPORTED: " + line);

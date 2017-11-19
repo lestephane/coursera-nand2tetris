@@ -2,9 +2,9 @@ import java.io.PrintWriter;
 import java.io.Writer;
 
 public class CodeWriter {
-    private int opCounter;
     private final PrintWriter output;
     private final String compilationUnitName;
+    private int opCounter;
 
     public CodeWriter(String compilationUnitName, Writer output) {
         this.compilationUnitName = compilationUnitName;
@@ -12,47 +12,13 @@ public class CodeWriter {
         this.output = new PrintWriter(output);
     }
 
-    public void ainstValue(int value) {
-        output.print('@');
-        output.println(value);
-    }
-
-    public void ainstSymbol(String symbol) {
-        output.print('@');
-        output.println(symbol);
-    }
-
     public void printComment(String line) {
         output.print("// ");
         output.println(line);
     }
 
-    public void assignAddressRegisterToDataRegister() {
-        output.println(assign().fromA().toD());
-    }
-
-    public void assignMemoryToAddressRegister() {
-        output.println(assign().fromM().toA());
-    }
-
-    public void assignMemoryToDataRegister() {
-        output.println(assign().fromM().toD());
-    }
-
-    public void assignDataRegisterToMemory() {
-        output.println(assign().fromD().toM());
-    }
-
     public void incrementMemoryAndAssignToAddressRegister() {
         output.println(assign().mPlusOne().toA().andToM());
-    }
-
-    public void decrementMemoryAndAssignToAddressRegister() {
-        output.println(assign().mMinusOne().toA().andToM());
-    }
-
-    public void raw(String s) {
-        output.println(s);
     }
 
     public void decrementAddressRegister() {
@@ -67,6 +33,10 @@ public class CodeWriter {
         output.println(assign().mPlusD().toM());
     }
 
+    private AssignmentOperationBuilder assign() {
+        return new AssignmentOperationBuilder();
+    }
+
     public void decrementMemoryByDataRegisterValue() {
         output.println(assign().mMinusD().toM());
     }
@@ -75,24 +45,46 @@ public class CodeWriter {
         output.close();
     }
 
-    private AssignmentOperationBuilder assign() {
-        return new AssignmentOperationBuilder();
+    void popToDataRegister() {
+        pop(Segment.TEMP, 0);
+        atTemp(0);
+        raw("D=M");
     }
 
     void pop(Segment segment, int i) {
+        popUsingBasePointer("SP", segment, i);
+    }
+
+    public void atTemp(int i) {
+        ainstValue(5 + i);
+    }
+
+    public void raw(String s) {
+        output.println(s);
+    }
+
+    void popUsingBasePointer(String bpSymbol, String targetSymbol) {
+        popUsingBasePointer(bpSymbol, targetSymbol);
+    }
+
+    void popUsingBasePointer(String sp, Segment segment) {
+        popUsingBasePointer(sp, segment, -1);
+    }
+
+    void popUsingBasePointer(String sp, Segment segment, int i) {
         ainstSymbol(segment.memoryLocation(compilationUnitName, i));
-        if (segment.usesBasePointer()) {
+        if (segment.usesBasePointer() && i >= 0) {
             assignMemoryToDataRegister();
         } else {
             assignAddressRegisterToDataRegister();
         }
-        if (segment.usesPointerArithmetic()) {
+        if (segment.usesPointerArithmetic() && i >=0) {
             ainstValue(i);
             raw("D=D+A");
         }
         ainstSymbol("R13");
         assignDataRegisterToMemory();
-        ainstSymbol("SP");
+        ainstSymbol(sp);
         decrementMemoryAndAssignToAddressRegister();
         assignMemoryToDataRegister();
         ainstSymbol("R13");
@@ -100,10 +92,34 @@ public class CodeWriter {
         assignDataRegisterToMemory();
     }
 
-    void popToDataRegister() {
-        pop(Segment.TEMP, 0);
-        atTemp(0);
-        raw("D=M");
+    public void ainstValue(int value) {
+        output.print('@');
+        output.println(value);
+    }
+
+    public void ainstSymbol(String symbol) {
+        output.print('@');
+        output.println(symbol);
+    }
+
+    public void assignMemoryToDataRegister() {
+        output.println(assign().fromM().toD());
+    }
+
+    public void assignAddressRegisterToDataRegister() {
+        output.println(assign().fromA().toD());
+    }
+
+    public void assignDataRegisterToMemory() {
+        output.println(assign().fromD().toM());
+    }
+
+    public void decrementMemoryAndAssignToAddressRegister() {
+        output.println(assign().mMinusOne().toA().andToM());
+    }
+
+    public void assignMemoryToAddressRegister() {
+        output.println(assign().fromM().toA());
     }
 
     void push(Segment segment, int i) {
@@ -168,21 +184,17 @@ public class CodeWriter {
         opCounter++;
     }
 
+    void jumpIfDataRegisterIsTruthy(String label) {
+        jumpIfDataRegister("NE", label); // truthy is the same as != 0
+    }
+
     private void jumpIfDataRegister(String opTrueJumpCondition, String operationLabel) {
         raw("@" + operationLabel);
         raw("D;J" + opTrueJumpCondition);
     }
 
-    void jumpIfDataRegisterIsTruthy(String label) {
-        jumpIfDataRegister("NE", label); // truthy is the same as != 0
-    }
-
     public void jump() {
         raw("0;JMP");
-    }
-
-    public void atTemp(int i) {
-        ainstValue(5 + i);
     }
 
     public void negateMemory() {
@@ -197,87 +209,11 @@ public class CodeWriter {
         output.println(String.format("(%s)", name));
     }
 
-    private class AssignmentOperationBuilder {
-        private String from;
-        private String to;
+    public void atSegment(Segment segment) {
+        ainstSymbol(segment.memoryLocation(null, -1));
+    }
 
-        public AssignmentOperationBuilder fromM() {
-            from = "M";
-            return this;
-        }
-
-        public AssignmentOperationBuilder toA() {
-            to = "A";
-            return this;
-        }
-
-        public AssignmentOperationBuilder fromA() {
-            from = "A";
-            return this;
-        }
-
-        public AssignmentOperationBuilder toD() {
-            to = "D";
-            return this;
-        }
-
-        public String toString() {
-            return to + "=" + from;
-        }
-
-        public AssignmentOperationBuilder fromD() {
-            from = "D";
-            return this;
-        }
-
-        public AssignmentOperationBuilder toM() {
-            to = "M";
-            return this;
-        }
-
-        public AssignmentOperationBuilder mPlusOne() {
-            from = "M+1";
-            return this;
-        }
-
-        public AssignmentOperationBuilder andToM() {
-            to += "M";
-            return this;
-        }
-
-        public AssignmentOperationBuilder aMinusOne() {
-            from = "A-1";
-            return this;
-        }
-
-        public AssignmentOperationBuilder mMinusOne() {
-            from = "M-1";
-            return this;
-        }
-
-        public AssignmentOperationBuilder aPlusD() {
-            from = "D+A";
-            return this;
-        }
-
-        public AssignmentOperationBuilder mPlusD() {
-            from = "D+M";
-            return this;
-        }
-
-        public AssignmentOperationBuilder mMinusD() {
-            from = "M-D";
-            return this;
-        }
-
-        public AssignmentOperationBuilder negatedM() {
-            from = "-M";
-            return this;
-        }
-
-        public AssignmentOperationBuilder notM() {
-            from = "!M";
-            return this;
-        }
+    public void assignMemoryPlusOneToAddressRegister() {
+        output.println(assign().mPlusOne().toA());
     }
 }
