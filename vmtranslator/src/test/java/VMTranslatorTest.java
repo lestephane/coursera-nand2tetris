@@ -2,6 +2,7 @@ import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class VMTranslatorTest {
     private VMTranslatorTestBuilder GivenSourceCode(String line) {
@@ -207,5 +208,10 @@ public class VMTranslatorTest {
                     asm.ifGoto("L2");
                     asm.goTo("L3");
                 });
+    }
+
+    @Test
+    public void failing() {
+        fail("should fail my build");
     }
 }

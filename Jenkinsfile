@@ -7,10 +7,20 @@ pipeline {
     //agent any
 
     stages {
-        stage('Gradle Test') {
+        stage('Build') {
             steps {
-                sh 'gradle test'
+                sh 'gradle build'
             }
+        }
+        stage('Test') {
+            steps {
+                sh 'gradle check'
+            }
+        }
+    }
+    post {
+        always {
+            junit '**/build/test-results/**/*.xml'
         }
     }
 }
