@@ -8,7 +8,7 @@ enum Segment {
     THIS("THIS"),
     TEMP((n,i)-> "5", false, true),
     CONSTANT(null, false, false),
-    STATIC((n,i)-> n + '.' + i, false, false),
+    STATIC((n,i)-> n.replace("/", "_") + '.' + i, false, false),
     POINTER((n,i)-> {
         switch (i) {
             case 0: return "THIS";

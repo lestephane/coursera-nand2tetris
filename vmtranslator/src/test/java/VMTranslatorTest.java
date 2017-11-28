@@ -175,10 +175,19 @@ public class VMTranslatorTest {
     }
 
     @Test
-    public void pushStatic() {
+    public void pushStaticUsingSimpleFileName() {
         GivenSourceCode("push static 123")
                 .ThenTheTranslatedCommandsAre((cmds) -> {
                     cmds.pushFromStatic(123);
+                });
+    }
+
+    @Test
+    public void pushStaticUsingLongFileName() {
+        GivenSourceCode("push static 123")
+                .HavingFileName("some/long/filename.vm")
+                .ThenTheTranslatedCommandsAre((cmds) -> {
+                    cmds.pushCompilationNameScopedStatic("some_long_filename", 123);
                 });
     }
 
@@ -218,5 +227,4 @@ public class VMTranslatorTest {
                     asm.functionReturn();
                 });
     }
-
 }

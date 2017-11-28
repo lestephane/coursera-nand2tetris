@@ -42,10 +42,10 @@ pipeline {
                             07/MemoryAccess/StaticTest/StaticTest \
                             08/ProgramFlow/BasicLoop/BasicLoop \
                             08/ProgramFlow/FibonacciSeries/FibonacciSeries \
-                            08/FunctionCalls/SimpleFunction/SimpleFunction \
-                        ; do
-                            java -cp vmtranslator/build/classes/java/main VMTranslator ${test}.vm
-                            tools/CPUEmulator.sh ${test}.tst
+                            08/FunctionCalls/SimpleFunction/SimpleFunction; do
+                                rm -f ${test}.asm
+                                java -cp vmtranslator/build/classes/java/main VMTranslator ${test}.vm
+                                tools/CPUEmulator.sh "${test}.tst"
                         done
                             # 08/FunctionCalls/FibonacciElement/FibonacciElement.tst \
                             # 08/FunctionCalls/StaticsTest/StaticsTest.tst \

@@ -49,7 +49,7 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
     }
 
     private void popsToWithoutLeadingComment(Segment segment, int i) {
-        asm("@" + segment.memoryLocation("Junit", i));
+        asm("@" + segment.memoryLocation(VMTranslatorTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
         asm(segment.usesBasePointer()? "D=M" : "D=A");
         if (segment.usesPointerArithmetic()) {
             asm("@" + i);
@@ -79,8 +79,13 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
     }
 
     public void pushFromStatic(int i) {
+        final String compilationUnitName = VMTranslatorTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME;
+        pushCompilationNameScopedStatic(compilationUnitName, i);
+    }
+
+    void pushCompilationNameScopedStatic(String compilationUnitName, int i) {
         asm("// push static " + i);
-        asm("@" + Segment.STATIC.memoryLocation("Junit", i));
+        asm("@" + Segment.STATIC.memoryLocation(compilationUnitName, i));
         asm("D=M");
         pushDataRegister();
     }
@@ -162,7 +167,7 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
             asm("@" + i);
             asm("D=A");
         } else {
-            asm("@" + segment.memoryLocation("Junit", i));
+            asm("@" + segment.memoryLocation(VMTranslatorTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
             if (segment.usesPointerArithmetic()) {
                 asm(segment.usesBasePointer() ? "D=M" : "D=A");
                 asm("@" + i);

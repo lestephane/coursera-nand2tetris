@@ -18,11 +18,17 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 class VMTranslatorTestBuilder {
-
-    private final String vmCode;
+    public static final String DEFAULT_TEST_COMPILATION_UNIT_NAME = "Junit";
+    private String vmCode;
+    private String fileName = DEFAULT_TEST_COMPILATION_UNIT_NAME + ".vm";
 
     public VMTranslatorTestBuilder(String vmCode) {
         this.vmCode = vmCode;
+    }
+
+    public VMTranslatorTestBuilder HavingFileName(String fileName) {
+        this.fileName = fileName;
+        return this;
     }
 
     public void ThenTheTranslatedOutputIs(String output) {
@@ -31,7 +37,7 @@ class VMTranslatorTestBuilder {
 
     private String translatedOutputForInput(String input) {
         StringWriter output = new StringWriter();
-        new VMTranslator(input).translateTo("Junit", output);
+        new VMTranslator(input).translateTo(fileName.replace(".vm", ""), output);
         return output.toString();
     }
 
