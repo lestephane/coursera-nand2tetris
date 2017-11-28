@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Init') {
             steps {
-                sh 'find -type f | xargs md5sum'
+                sh 'find -type f -print0 | xargs -0 md5sum'
             }
         }
         stage('Build') {
@@ -34,21 +34,22 @@ pipeline {
                     steps {
                         sh '''
                         set -euo pipefail
-                        for test in 07/MemoryAccess/BasicTest/BasicTest; do
+                        for test in \
+                            07/StackArithmetic/SimpleAdd/SimpleAdd \
+                            07/StackArithmetic/StackTest/StackTest \
+                            07/MemoryAccess/BasicTest/BasicTest \
+                            07/MemoryAccess/PointerTest/PointerTest \
+                            07/MemoryAccess/StaticTest/StaticTest \
+                            08/ProgramFlow/BasicLoop/BasicLoop \
+                            08/ProgramFlow/FibonacciSeries/FibonacciSeries \
+                            08/FunctionCalls/SimpleFunction/SimpleFunction \
+                        ; do
                             java -cp vmtranslator/build/classes/java/main VMTranslator ${test}.vm
                             tools/CPUEmulator.sh ${test}.tst
                         done
-                            /* \
-                            07/MemoryAccess/StaticTest/StaticTest.tst \
-                            07/MemoryAccess/PointerTest/PointerTest.tst \
-                            07/StackArithmetic/StackTest/StackTest.tst \
-                            07/StackArithmetic/SimpleAdd/SimpleAdd.tst \
-                            08/FunctionCalls/FibonacciElement/FibonacciElement.tst \
-                            08/FunctionCalls/SimpleFunction/SimpleFunction.tst \
-                            08/FunctionCalls/StaticsTest/StaticsTest.tst \
-                            08/FunctionCalls/NestedCall/NestedCall.tst \
-                            08/ProgramFlow/BasicLoop/BasicLoop.tst \
-                            08/ProgramFlow/FibonacciSeries/FibonacciSeries.tst */
+                            # 08/FunctionCalls/FibonacciElement/FibonacciElement.tst \
+                            # 08/FunctionCalls/StaticsTest/StaticsTest.tst \
+                            # 08/FunctionCalls/NestedCall/NestedCall.tst \
                         '''
                     }
                 }
