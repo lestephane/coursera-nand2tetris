@@ -1,4 +1,7 @@
 import java.io.*;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.logging.Logger;
 
 public class Parser {
@@ -113,6 +116,34 @@ public class Parser {
             } catch (FileNotFoundException e) {
                 throw new ParseException(e);
             }
+        }
+    }
+
+    public static class DirectorySource implements Source {
+        private final Path dir;
+
+        public DirectorySource(File dir) {
+            this.dir = dir.toPath();
+        }
+
+        public Parser makeParser() {
+            try {
+                String content = readAllFiles();
+                return new Parser(new BufferedReader(new StringReader(content)));
+            } catch (IOException e) {
+                throw new ParseException(e);
+            }
+        }
+
+        private String readAllFiles() throws IOException {
+            StringBuilder result = new StringBuilder();
+            try(DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.vm")) {
+                for (Path entry: stream) {
+                    result.append(Files.readAllBytes(entry));
+                    result.append('\n');
+                }
+            }
+            return null;
         }
     }
 }

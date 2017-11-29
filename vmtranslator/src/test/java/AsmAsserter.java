@@ -1,15 +1,18 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerCommandsAsserter.HackAssemblerCommandAsserter> {
+public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsserter> {
     private int pos;
 
-    public HackAssemblerCommandsAsserter() {
-        this.pos = 0;
+    public AsmAsserter(String asmCode) {
+        for (String s : Arrays.asList(asmCode.split("\n"))) {
+            addLine(s.trim());
+        }
     }
 
     public void popsToLocal(int i) {
@@ -49,7 +52,7 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
     }
 
     private void popsToWithoutLeadingComment(Segment segment, int i) {
-        asm("@" + segment.memoryLocation(VMTranslatorTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
+        asm("@" + segment.memoryLocation(VMTranslatorSingleFileTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
         asm(segment.usesBasePointer()? "D=M" : "D=A");
         if (segment.usesPointerArithmetic()) {
             asm("@" + i);
@@ -79,7 +82,7 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
     }
 
     public void pushFromStatic(int i) {
-        final String compilationUnitName = VMTranslatorTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME;
+        final String compilationUnitName = VMTranslatorSingleFileTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME;
         pushCompilationNameScopedStatic(compilationUnitName, i);
     }
 
@@ -167,7 +170,7 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
             asm("@" + i);
             asm("D=A");
         } else {
-            asm("@" + segment.memoryLocation(VMTranslatorTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
+            asm("@" + segment.memoryLocation(VMTranslatorSingleFileTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
             if (segment.usesPointerArithmetic()) {
                 asm(segment.usesBasePointer() ? "D=M" : "D=A");
                 asm("@" + i);
@@ -288,7 +291,7 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
     }
 
     public void addLine(String line) {
-        add(new HackAssemblerCommandsAsserter.HackAssemblerCommandAsserter(size(), line));
+        add(new AsmAsserter.HackAssemblerCommandAsserter(size(), line));
     }
 
     void pushesLocal(int i) {
@@ -354,7 +357,7 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
         asm("M=D");
     }
 
-    public void functionStartWithArgCount(String name, int nargs) {
+    public void definesFunction(String name, int nargs) {
         comment("function %s %s", name, nargs);
         labelWithoutLeadingComment(name);
         for (int i = 0; i < nargs; i++) {
@@ -365,7 +368,7 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
     //
     // https://www.coursera.org/learn/nand2tetris2/lecture/zJVns/unit-2-4-function-call-and-return-implementation-preview (@ 13:58)
     //
-    void functionReturn() {
+    void returns() {
         comment("return");
 
         // 1. the function's return value is transferred to arg[0]
@@ -389,7 +392,7 @@ public class HackAssemblerCommandsAsserter extends ArrayList<HackAssemblerComman
             this.lineNumber = lineNumber;
         }
         public void isCode(String expectedCode) {
-            assertThat(String.format("code at line number %s of %s", lineNumber, HackAssemblerCommandsAsserter.this), this.code, is(expectedCode));
+            assertThat(String.format("code at line number %s of %s", lineNumber, AsmAsserter.this), this.code, is(expectedCode));
         }
 
         public String toString() {

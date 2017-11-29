@@ -1,5 +1,3 @@
-import java.io.*;
-
 public class Parser {
     private final BufferedReader input;
     private String currentLine;

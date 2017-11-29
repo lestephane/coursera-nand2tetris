@@ -5,58 +5,42 @@ import Hack.CPUEmulator.ROM;
 import Hack.Controller.ProgramException;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.Consumer;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
-class VMTranslatorTestBuilder {
+class VMTranslatorSingleFileTestBuilder implements VMTranslatorInput {
     public static final String DEFAULT_TEST_COMPILATION_UNIT_NAME = "Junit";
-    private String vmCode;
     private String fileName = DEFAULT_TEST_COMPILATION_UNIT_NAME + ".vm";
+    private String vmCode;
 
-    public VMTranslatorTestBuilder(String vmCode) {
+    public VMTranslatorSingleFileTestBuilder(String vmCode) {
         this.vmCode = vmCode;
     }
 
-    public VMTranslatorTestBuilder HavingFileName(String fileName) {
+    public VMTranslatorSingleFileTestBuilder HavingFileName(String fileName) {
         this.fileName = fileName;
         return this;
     }
 
-    public void ThenTheTranslatedOutputIs(String output) {
-        assertThat(translatedOutputForInput(vmCode), is(output));
+    void ThenTheTranslatedCommandsAre(Consumer<AsmAsserter> asmConsumer) {
+        new VMTranslatorAssertThat(this).translatesTo(asmConsumer);
     }
 
-    private String translatedOutputForInput(String input) {
-        StringWriter output = new StringWriter();
-        new VMTranslator(input).translateTo(fileName.replace(".vm", ""), output);
-        return output.toString();
+    public String translationUnitName() {
+        return fileName.replace(".vm", "");
     }
 
-    void ThenTheTranslatedCommandsAre(
-            Consumer<HackAssemblerCommandsAsserter> asmConsumer) {
-        final HackAssemblerCommandsAsserter cmds = new HackAssemblerCommandsAsserter();
-        final String output = translatedOutputForInput(vmCode);
-
-        for (String s : Arrays.asList(output.split("\n"))) {
-            cmds.addLine(s.trim());
-        }
-
-        asmConsumer.accept(cmds);
-        cmds.nothingLeft();
+    public String vmSourceCode() {
+        return vmCode;
     }
 
-    public void ThenTheResultingExecutionStateIs(Consumer<ExecutionEnvironmentAsserter> execConsumer) {
+    public void ThenTheResultingExecutionStateIs(Consumer<CpuAsserter> execConsumer) {
         try(TemporaryAsmFile tmpFile = new TemporaryAsmFile()) {
-            final String translatedCode = translatedOutputForInput(vmCode);
+            final String translatedCode = translate(vmCode);
             Files.write(tmpFile.getFile(), Arrays.asList(translatedCode));
             runProgram(tmpFile, execConsumer);
         } catch (IOException ioe){
@@ -64,7 +48,11 @@ class VMTranslatorTestBuilder {
         }
     }
 
-    private void runProgram(TemporaryAsmFile tmpFile, Consumer<ExecutionEnvironmentAsserter> execConsumer) {
+    private String translate(String input) {
+        return new VMTranslatorAssertThat(this).translate();
+    }
+
+    private void runProgram(TemporaryAsmFile tmpFile, Consumer<CpuAsserter> execConsumer) {
         final CPUEmulator emu = new CPUEmulator();
         try {
             final Field cpuField = emu.getClass().getDeclaredField("cpu");
@@ -80,7 +68,7 @@ class VMTranslatorTestBuilder {
             while (rom.getValueAt(cpu.getPC().get()) != HackAssemblerTranslator.NOP) {
                 cpu.executeInstruction();
             }
-            execConsumer.accept(new ExecutionEnvironmentAsserter(cpu, rom));
+            execConsumer.accept(new CpuAsserter(cpu, rom));
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         } catch (ProgramException e) {
@@ -113,12 +101,12 @@ class VMTranslatorTestBuilder {
         }
     }
 
-    public static class ExecutionEnvironmentAsserter {
+    public static class CpuAsserter {
         private final CPU cpu;
         private final ROM rom;
         private final StackAsserter stack;
 
-        public ExecutionEnvironmentAsserter(CPU cpu, ROM rom) {
+        public CpuAsserter(CPU cpu, ROM rom) {
             this.cpu = cpu;
             this.rom = rom;
             this.stack = new StackAsserter();

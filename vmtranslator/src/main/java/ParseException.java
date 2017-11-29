@@ -1,7 +1,7 @@
-import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class ParseException extends RuntimeException {
-    public ParseException(FileNotFoundException e) {
+    public ParseException(IOException e) {
         super(e);
     }
 }

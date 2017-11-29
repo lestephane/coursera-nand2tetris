@@ -2,21 +2,18 @@ import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 public class VMTranslatorTest {
-    private VMTranslatorTestBuilder GivenSourceCode(String line) {
-        return new VMTranslatorTestBuilder(line);
+    private VMTranslatorSingleFileTestBuilder GivenSourceCode(String line) {
+        return new VMTranslatorSingleFileTestBuilder(line);
     }
 
-    private VMTranslatorTestBuilder GivenSourceCode(String ... lines) {
-        return new VMTranslatorTestBuilder(String.join("\n", lines));
+    private VMTranslatorSingleFileTestBuilder GivenSourceCode(String ... lines) {
+        return new VMTranslatorSingleFileTestBuilder(String.join("\n", lines));
     }
 
-    @Test
-    public void emptyFile() {
-        GivenSourceCode("")
-                .ThenTheTranslatedOutputIs("");
+    private VMTranslatorDirectoryTestBuilder GivenSourceDirectory(String name) {
+        return new VMTranslatorDirectoryTestBuilder(name);
     }
 
     @Test
@@ -223,8 +220,26 @@ public class VMTranslatorTest {
     public void emptyFunction() {
         GivenSourceCode("function SimpleFunction.test 3", "return")
                 .ThenTheTranslatedCommandsAre((asm) -> {
-                    asm.functionStartWithArgCount("SimpleFunction.test", 3);
-                    asm.functionReturn();
+                    asm.definesFunction("SimpleFunction.test", 3);
+                    asm.returns();
                 });
+    }
+
+    @Test
+    public void translateDirectory() {
+        GivenSourceDirectory("MultiSource")
+                .withFile((f) -> f
+                        .withName("FirstSource.vm")
+                        .withLines("function First.func 0", "return"))
+                .withFile((f) -> f
+                        .withName("SecondSource.vm")
+                        .withLines("function Second.func 0", "return"))
+        .ThenTheTranslatedCommandsAre((asm) -> {
+            asm.definesFunction("First.func", 0);
+            asm.returns();
+            asm.definesFunction("Second.func", 0);
+            asm.returns();
+        });
+
     }
 }
