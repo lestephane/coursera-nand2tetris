@@ -10,6 +10,7 @@ pipeline {
     stages {
         stage('Init') {
             steps {
+                sh 'gradle clean'
                 sh 'find -type f -print0 | xargs -0 md5sum'
             }
         }
