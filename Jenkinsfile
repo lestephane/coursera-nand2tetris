@@ -33,39 +33,12 @@ pipeline {
                 }
                 stage('CPUEmulator Tests') {
                     steps {
-                        sh '''
-                        set -euo pipefail
-                        for test in \
-                            07/StackArithmetic/SimpleAdd/SimpleAdd \
-                            07/StackArithmetic/StackTest/StackTest \
-                            07/MemoryAccess/BasicTest/BasicTest \
-                            07/MemoryAccess/PointerTest/PointerTest \
-                            07/MemoryAccess/StaticTest/StaticTest \
-                            08/ProgramFlow/BasicLoop/BasicLoop \
-                            08/ProgramFlow/FibonacciSeries/FibonacciSeries \
-                            08/FunctionCalls/SimpleFunction/SimpleFunction; do
-
-                                rm -f "${test}.asm" "${test}.out"
-                                java -cp vmtranslator/build/classes/java/main VMTranslator ${test}.vm
-                                tools/CPUEmulator.sh "${test}.tst" || {
-                                    diff -w "${test}.out" "${test}.cmp"
-                                }
-                        done
-
-                        for dirtest in \
-                            08/FunctionCalls/NestedCall; do
-
-                            base="${dirtest}/$(basename "${dirtest}")"
-                            rm -f "${base}.asm" "${base}.out"
-                            java -cp vmtranslator/build/classes/java/main VMTranslator ${dirtest}
-                            tools/CPUEmulator.sh "${base}.tst" || {
-                                diff -w "${base}.out" "${base}.cmp"
-                            }
-                        done
-
-                        # 08/FunctionCalls/FibonacciElement/FibonacciElement \
-                        # 08/FunctionCalls/StaticsTest/StaticsTest \
-                        '''
+                        sh "./run-cpuemulator-tests.sh > cpuemulator-tests.tap"
+                    }
+                    post {
+                        always {
+                            step([$class: "TapPublisher", testResults: "cpuemulator-tests.tap"])
+                        }
                     }
                 }
             }
