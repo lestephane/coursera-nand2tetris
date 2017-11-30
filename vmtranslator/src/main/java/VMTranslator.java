@@ -30,19 +30,21 @@ public class VMTranslator {
         File sourceFile = new File(sourceName);
         if (sourceFile.isFile()) {
             LOGGER.info(() -> "source file:" + sourceName);
-            processFile(sourceFile);
+            processFile(sourceFile.toPath());
         } else {
             LOGGER.info(() -> "source directory:" + sourceName);
             processDirectory(sourceFile.toPath());
         }
     }
 
-    private static void processFile(File srcFile) throws IOException {
-        String targetFileName = srcFile.getName().replace(".vm", ".asm");
-        LOGGER.info(() -> "target file:" + targetFileName);
-        try (FileWriter w = new FileWriter(targetFileName)) {
-            String compilationUnitName = srcFile.getName().replace(".vm", "");
-            new VMTranslator(VMTranslatorSource.fromFile(srcFile)).translateTo(compilationUnitName, w);
+    private static void processFile(Path srcFile) throws IOException {
+        final String srcFileName = srcFile.getFileName().toString();
+        Path targetFile = srcFile.resolveSibling(srcFile.getFileName().toString().replace(".vm", ".asm"));
+        LOGGER.info(() -> "target file:" + targetFile);
+        try (FileWriter w = new FileWriter(targetFile.toString())) {
+            String compilationUnitName = srcFileName.replace(".vm", "");
+            new VMTranslator(VMTranslatorSource.fromFile(srcFile))
+                    .translateTo(compilationUnitName, w);
         }
     }
 
@@ -56,13 +58,13 @@ public class VMTranslator {
         }
     }
 
-    public String translate(String unitName) {
+    String translate(String unitName) {
         StringWriter output = new StringWriter();
         translateTo(unitName, output);
         return output.toString();
     }
 
-    public void translateTo(String compilationUnitName, Writer output) {
+    void translateTo(String compilationUnitName, Writer output) {
         CodeWriter codeOutput = new CodeWriter(compilationUnitName, output);
         try {
             performTranslationTo(codeOutput);

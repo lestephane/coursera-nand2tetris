@@ -43,7 +43,8 @@ public class TestDirectoryBuilder {
     }
 
     public TestDirectoryBuilder withFile(Consumer<TestFileBuilder> consumer) {
-        TestFileBuilder file = new TestFileBuilder();
+        TestFileBuilder file = new TestFileBuilder()
+                .withParent(enclosingDirectory().resolve(name));
         testFiles.add(file);
         consumer.accept(file);
         return this;
@@ -53,8 +54,12 @@ public class TestDirectoryBuilder {
         Path testDirectory = enclosingDirectory.resolve(name);
         Files.createDirectory(testDirectory);
         for (TestFileBuilder f: testFiles) {
-            f.build(testDirectory);
+            f.build();
         }
         return testDirectory;
+    }
+
+    public static Path enclosingDirectory() {
+        return enclosingDirectory;
     }
 }

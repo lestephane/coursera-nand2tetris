@@ -6,12 +6,20 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 public class VMTranslatorTest {
-    private VMTranslatorSingleFileTestBuilder GivenSourceCode(String line) {
-        return new VMTranslatorSingleFileTestBuilder(line);
+    private VMTranslatorInMemoryTestBuilder GivenSourceCode(String line) {
+        return new VMTranslatorInMemoryTestBuilder(line);
     }
 
-    private VMTranslatorSingleFileTestBuilder GivenSourceCode(String ... lines) {
-        return new VMTranslatorSingleFileTestBuilder(String.join("\n", lines));
+    private VMTranslatorInMemoryTestBuilder GivenSourceCode(String ... lines) {
+        return new VMTranslatorInMemoryTestBuilder(String.join("\n", lines));
+    }
+
+    private VMTranslatorSingleFileTestBuilder GivenSourceFile(String name) {
+        return new VMTranslatorSingleFileTestBuilder(name);
+    }
+
+    private VMTranslatorDirectoryTestBuilder GivenSourceDirectory(String name) {
+        return new VMTranslatorDirectoryTestBuilder(name);
     }
 
     @Test
@@ -222,13 +230,14 @@ public class VMTranslatorTest {
                 });
     }
 
+
     @Test
-    public void translateDirectory() throws IOException {
+    public void translateDirectoryOnFileSystem() throws IOException {
         GivenSourceDirectory("MultiSource")
-                .withFile((f) -> f
+                .withFile(f -> f
                         .withName("FirstSource.vm")
                         .withLines("function First.func 0", "return"))
-                .withFile((f) -> f
+                .withFile(f -> f
                         .withName("SecondSource.vm")
                         .withLines("function Second.func 0", "return"))
         .ThenTheTranslatedCommandsAre((asm) -> {
@@ -240,7 +249,14 @@ public class VMTranslatorTest {
 
     }
 
-    private VMTranslatorDirectoryTestBuilder GivenSourceDirectory(String name) {
-        return new VMTranslatorDirectoryTestBuilder(name);
+    @Test
+    public void translateSingleFileOnFileSystem() throws IOException {
+        GivenSourceFile("SingleSourceFile.vm")
+                .withLines("function First.func 0", "return")
+                .ThenTheTranslatedCommandsAre((asm) -> {
+            asm.definesFunction("First.func", 0);
+            asm.returns();
+        });
+
     }
 }

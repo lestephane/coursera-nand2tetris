@@ -13,7 +13,7 @@ interface VMTranslatorSource {
         return new DirectorySource(inputDirectory);
     }
 
-    static VMTranslatorSource fromFile(File inputFile) {
+    static VMTranslatorSource fromFile(Path inputFile) {
         return new FileSource(inputFile);
     }
 
@@ -44,22 +44,22 @@ interface VMTranslatorSource {
     }
 
     class FileSource implements VMTranslatorSource {
-        private final File input;
+        private final Path input;
 
-        FileSource(File input) {
+        FileSource(Path input) {
             this.input = input;
         }
 
         public Reader open() {
             try {
-                return new FileReader(input);
+                return new FileReader(input.toFile());
             } catch (FileNotFoundException e) {
                 throw new UncheckedIOException(e);
             }
         }
 
         public String translationUnitName() {
-            return input.getName().replaceFirst(".vm", "");
+            return input.getFileName().toString().replaceFirst(".vm", "");
         }
     }
 

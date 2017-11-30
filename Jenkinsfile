@@ -45,7 +45,7 @@ pipeline {
                             08/ProgramFlow/FibonacciSeries/FibonacciSeries \
                             08/FunctionCalls/SimpleFunction/SimpleFunction; do
 
-                                rm -f ${test}.asm
+                                rm -f "${test}.asm" "${test}.out"
                                 java -cp vmtranslator/build/classes/java/main VMTranslator ${test}.vm
                                 tools/CPUEmulator.sh "${test}.tst" || {
                                     diff -w "${test}.out" "${test}.cmp"
@@ -56,7 +56,7 @@ pipeline {
                             08/FunctionCalls/NestedCall; do
 
                             base="${dirtest}/$(basename "${dirtest}")"
-                            rm -f "${base}.asm"
+                            rm -f "${base}.asm" "${base}.out"
                             java -cp vmtranslator/build/classes/java/main VMTranslator ${dirtest}
                             tools/CPUEmulator.sh "${base}.tst" || {
                                 diff -w "${base}.out" "${base}.cmp"

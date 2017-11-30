@@ -5,9 +5,19 @@ import java.nio.file.Path;
 class TestFileBuilder {
     private String name;
     private String content;
+    private Path parent;
+
+    TestFileBuilder() {
+        this.parent = TestDirectoryBuilder.enclosingDirectory();
+    }
 
     TestFileBuilder withName(String name) {
         this.name = name;
+        return this;
+    }
+
+    TestFileBuilder withParent(Path parent) {
+        this.parent = parent;
         return this;
     }
 
@@ -16,8 +26,9 @@ class TestFileBuilder {
         return this;
     }
 
-    void build(Path parent) throws IOException {
+    Path build() throws IOException {
         Path testFile = parent.resolve(name);
         Files.write(testFile, content.getBytes());
+        return testFile;
     }
 }
