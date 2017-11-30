@@ -1,7 +1,5 @@
-import java.io.*;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.logging.Logger;
 
 public class Parser {
@@ -9,32 +7,41 @@ public class Parser {
     private final BufferedReader input;
     private String currentLine;
 
-    private Parser(BufferedReader r) {
-        this.input = r;
-        this.advance();
-    }
-
-    public boolean hasMoreCommands() {
-        return this.currentLine != null;
+    Parser(BufferedReader r) {
+        input = r;
+        advance();
     }
 
     public void advance() {
         try {
-            this.currentLine = input.readLine();
+            currentLine = input.readLine();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    public boolean hasMoreCommands() {
+        return currentLine != null;
+    }
+
     public Commands.Command command() {
         if (currentLine == null) return null;
-        final String originalLine =  currentLine.trim();
+        String originalLine =  currentLine.trim();
         LOGGER.fine(() -> "line: " + originalLine);
         if (originalLine.startsWith("//")) {
             return Commands.comment(originalLine);
         }
-        final String effectiveLine = trimOfWhitespaceAndComments(currentLine);
+        String effectiveLine = trimOfWhitespaceAndComments(currentLine);
         return makeCommand(effectiveLine);
+    }
+
+    private String trimOfWhitespaceAndComments(String line) {
+        int pos = line.indexOf("//");
+        if (pos != -1) {
+            return line.substring(0, pos).trim();
+        } else {
+            return line.trim();
+        }
     }
 
     private Commands.Command makeCommand(String line) {
@@ -75,75 +82,6 @@ public class Parser {
             return Commands.comment("UNSUPPORTED: " + line);
         } else {
             return Commands.comment("");
-        }
-    }
-
-    private String trimOfWhitespaceAndComments(final String line) {
-        int pos = line.indexOf("//");
-        if (pos != -1) {
-            return line.substring(0, pos).trim();
-        } else {
-            return line.trim();
-        }
-    }
-
-    public interface Source {
-        Parser makeParser();
-    }
-
-    public static class StringSource implements Source {
-        private final String input;
-
-        public StringSource(String input) {
-            this.input = input;
-        }
-
-        public Parser makeParser() {
-            return new Parser(new BufferedReader(new StringReader(input)));
-        }
-    }
-
-    public static class FileSource implements Source {
-        private final File input;
-
-        public FileSource(File input) {
-            this.input = input;
-        }
-
-        public Parser makeParser() {
-            try {
-                return new Parser(new BufferedReader(new FileReader(input)));
-            } catch (FileNotFoundException e) {
-                throw new ParseException(e);
-            }
-        }
-    }
-
-    public static class DirectorySource implements Source {
-        private final Path dir;
-
-        public DirectorySource(File dir) {
-            this.dir = dir.toPath();
-        }
-
-        public Parser makeParser() {
-            try {
-                String content = readAllFiles();
-                return new Parser(new BufferedReader(new StringReader(content)));
-            } catch (IOException e) {
-                throw new ParseException(e);
-            }
-        }
-
-        private String readAllFiles() throws IOException {
-            StringBuilder result = new StringBuilder();
-            try(DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.vm")) {
-                for (Path entry: stream) {
-                    result.append(Files.readAllBytes(entry));
-                    result.append('\n');
-                }
-            }
-            return null;
         }
     }
 }

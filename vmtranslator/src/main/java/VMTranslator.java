@@ -1,4 +1,5 @@
 import java.io.*;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -17,48 +18,48 @@ public class VMTranslator {
             throw new UncheckedIOException(e);
         }
     }
-    private final Parser.Source parserSource;
-    public VMTranslator(String input) {
-        this(new Parser.StringSource(input));
-    }
 
-    private VMTranslator(Parser.Source source) {
-        parserSource = source;
-    }
+    private final VMTranslatorSource input;
 
-    public VMTranslator(File input) {
-            this(new Parser.FileSource(input));
+    public VMTranslator(VMTranslatorSource input) {
+        this.input = input;
     }
 
     public static void main(String[] args) throws IOException {
-        final String sourceName = args[0];
-        final File sourceFile = new File(sourceName);
+        String sourceName = args[0];
+        File sourceFile = new File(sourceName);
         if (sourceFile.isFile()) {
             LOGGER.info(() -> "source file:" + sourceName);
             processFile(sourceFile);
         } else {
             LOGGER.info(() -> "source directory:" + sourceName);
-            processDirectory(sourceFile);
+            processDirectory(sourceFile.toPath());
         }
     }
 
     private static void processFile(File srcFile) throws IOException {
-        final String targetFileName = srcFile.getName().replace(".vm", ".asm");
+        String targetFileName = srcFile.getName().replace(".vm", ".asm");
         LOGGER.info(() -> "target file:" + targetFileName);
         try (FileWriter w = new FileWriter(targetFileName)) {
-            final String compilationUnitName = srcFile.getName().replace(".vm", "");
-            new VMTranslator(srcFile).translateTo(compilationUnitName, w);
+            String compilationUnitName = srcFile.getName().replace(".vm", "");
+            new VMTranslator(VMTranslatorSource.fromFile(srcFile)).translateTo(compilationUnitName, w);
         }
     }
 
-    private static void processDirectory(File srcDir) throws IOException {
-        final File targetFileName = new File(srcDir.getParent(), srcDir.getName() + ".asm");
-        LOGGER.info(() -> "target file:" + targetFileName);
-        try (FileWriter w = new FileWriter(targetFileName)) {
-            final String compilationUnitName = srcDir.getName();
-            final Parser.DirectorySource directorySource = new Parser.DirectorySource(srcDir);
-            new VMTranslator(directorySource).translateTo(compilationUnitName, w);
+    private static void processDirectory(Path srcDir) throws IOException {
+        Path targetPath = srcDir.resolve(srcDir.getFileName() + ".asm");
+        LOGGER.info(() -> "target file:" + targetPath);
+        File targetFile = targetPath.toFile();
+        try (FileWriter w = new FileWriter(targetFile)) {
+            String compilationUnitName = srcDir.toFile().getName();
+            new VMTranslator(VMTranslatorSource.fromDirectory(srcDir)).translateTo(compilationUnitName, w);
         }
+    }
+
+    public String translate(String unitName) {
+        StringWriter output = new StringWriter();
+        translateTo(unitName, output);
+        return output.toString();
     }
 
     public void translateTo(String compilationUnitName, Writer output) {
@@ -81,7 +82,7 @@ public class VMTranslator {
     }
 
     private void forEachCommand(Consumer<Commands.Command> cmd) {
-        Parser parser = parserSource.makeParser();
+        Parser parser = new Parser(new BufferedReader(input.open()));
         while (parser.hasMoreCommands()) {
             Commands.Command c = parser.command();
             if (c != null) {

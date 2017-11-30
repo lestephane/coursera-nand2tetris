@@ -43,16 +43,28 @@ pipeline {
                             07/MemoryAccess/StaticTest/StaticTest \
                             08/ProgramFlow/BasicLoop/BasicLoop \
                             08/ProgramFlow/FibonacciSeries/FibonacciSeries \
-                            08/FunctionCalls/SimpleFunction/SimpleFunction \
-                            08/FunctionCalls/NestedCall; do
+                            08/FunctionCalls/SimpleFunction/SimpleFunction; do
+
                                 rm -f ${test}.asm
                                 java -cp vmtranslator/build/classes/java/main VMTranslator ${test}.vm
                                 tools/CPUEmulator.sh "${test}.tst" || {
                                     diff -w "${test}.out" "${test}.cmp"
                                 }
                         done
-                            # 08/FunctionCalls/FibonacciElement/FibonacciElement \
-                            # 08/FunctionCalls/StaticsTest/StaticsTest \
+
+                        for dirtest in \
+                            08/FunctionCalls/NestedCall; do
+
+                            base="${dirtest}/$(basename "${dirtest}")"
+                            rm -f "${base}.asm"
+                            java -cp vmtranslator/build/classes/java/main VMTranslator ${dirtest}
+                            tools/CPUEmulator.sh "${base}.tst" || {
+                                diff -w "${base}.out" "${base}.cmp"
+                            }
+                        done
+
+                        # 08/FunctionCalls/FibonacciElement/FibonacciElement \
+                        # 08/FunctionCalls/StaticsTest/StaticsTest \
                         '''
                     }
                 }

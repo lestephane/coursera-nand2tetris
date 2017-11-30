@@ -1,5 +1,7 @@
 import org.junit.Test;
 
+import java.io.IOException;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -12,17 +14,13 @@ public class VMTranslatorTest {
         return new VMTranslatorSingleFileTestBuilder(String.join("\n", lines));
     }
 
-    private VMTranslatorDirectoryTestBuilder GivenSourceDirectory(String name) {
-        return new VMTranslatorDirectoryTestBuilder(name);
-    }
-
     @Test
     public void comment() {
         GivenSourceCode("// comment")
                 .ThenTheTranslatedCommandsAre((cmds) -> {
                     cmds.comment("// comment");
                 });
-        }
+    }
 
     @Test
     public void pushConstantTddStyle() {
@@ -144,7 +142,6 @@ public class VMTranslatorTest {
                 });
     }
 
-
     @Test
     public void unaryOperations() {
         GivenSourceCode("neg", "not")
@@ -226,7 +223,7 @@ public class VMTranslatorTest {
     }
 
     @Test
-    public void translateDirectory() {
+    public void translateDirectory() throws IOException {
         GivenSourceDirectory("MultiSource")
                 .withFile((f) -> f
                         .withName("FirstSource.vm")
@@ -241,5 +238,9 @@ public class VMTranslatorTest {
             asm.returns();
         });
 
+    }
+
+    private VMTranslatorDirectoryTestBuilder GivenSourceDirectory(String name) {
+        return new VMTranslatorDirectoryTestBuilder(name);
     }
 }

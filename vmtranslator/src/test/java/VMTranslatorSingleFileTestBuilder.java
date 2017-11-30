@@ -12,7 +12,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-class VMTranslatorSingleFileTestBuilder implements VMTranslatorInput {
+class VMTranslatorSingleFileTestBuilder {
     public static final String DEFAULT_TEST_COMPILATION_UNIT_NAME = "Junit";
     private String fileName = DEFAULT_TEST_COMPILATION_UNIT_NAME + ".vm";
     private String vmCode;
@@ -27,20 +27,21 @@ class VMTranslatorSingleFileTestBuilder implements VMTranslatorInput {
     }
 
     void ThenTheTranslatedCommandsAre(Consumer<AsmAsserter> asmConsumer) {
-        new VMTranslatorAssertThat(this).translatesTo(asmConsumer);
+        new VMTranslatorAssertThat(source()).translatesTo(asmConsumer);
     }
 
-    public String translationUnitName() {
+    private VMTranslatorSource source() {
+        String unitName = unit();
+        return VMTranslatorSource.fromString(unitName, vmCode);
+    }
+
+    private String unit() {
         return fileName.replace(".vm", "");
-    }
-
-    public String vmSourceCode() {
-        return vmCode;
     }
 
     public void ThenTheResultingExecutionStateIs(Consumer<CpuAsserter> execConsumer) {
         try(TemporaryAsmFile tmpFile = new TemporaryAsmFile()) {
-            final String translatedCode = translate(vmCode);
+            String translatedCode = translate();
             Files.write(tmpFile.getFile(), Arrays.asList(translatedCode));
             runProgram(tmpFile, execConsumer);
         } catch (IOException ioe){
@@ -48,21 +49,21 @@ class VMTranslatorSingleFileTestBuilder implements VMTranslatorInput {
         }
     }
 
-    private String translate(String input) {
-        return new VMTranslatorAssertThat(this).translate();
+    private String translate() {
+        return new VMTranslator(source()).translate(unit());
     }
 
     private void runProgram(TemporaryAsmFile tmpFile, Consumer<CpuAsserter> execConsumer) {
-        final CPUEmulator emu = new CPUEmulator();
+        CPUEmulator emu = new CPUEmulator();
         try {
-            final Field cpuField = emu.getClass().getDeclaredField("cpu");
+            Field cpuField = emu.getClass().getDeclaredField("cpu");
             cpuField.setAccessible(true);
-            final CPU cpu = (CPU) cpuField.get(emu);
-            final Field romField = cpu.getClass().getDeclaredField("rom");
+            CPU cpu = (CPU) cpuField.get(emu);
+            Field romField = cpu.getClass().getDeclaredField("rom");
             romField.setAccessible(true);
-            final ROM rom = (ROM) romField.get(cpu);
-            final int romSize = rom.getSize();
-            final int romContentSize = rom.getContents().length;
+            ROM rom = (ROM) romField.get(cpu);
+            int romSize = rom.getSize();
+            int romContentSize = rom.getContents().length;
             initializeSegmentPointers(cpu);
             rom.loadProgram(tmpFile.getFile().toAbsolutePath().toString());
             while (rom.getValueAt(cpu.getPC().get()) != HackAssemblerTranslator.NOP) {
@@ -109,7 +110,7 @@ class VMTranslatorSingleFileTestBuilder implements VMTranslatorInput {
         public CpuAsserter(CPU cpu, ROM rom) {
             this.cpu = cpu;
             this.rom = rom;
-            this.stack = new StackAsserter();
+            stack = new StackAsserter();
         }
 
         public StackAsserter stack() {
@@ -118,8 +119,8 @@ class VMTranslatorSingleFileTestBuilder implements VMTranslatorInput {
 
         public class StackAsserter {
             public short peek() {
-                final short stackPointer = cpu.getRAM().getValueAt(0);
-                final short stackTop = cpu.getRAM().getValueAt(stackPointer - 1);
+                short stackPointer = cpu.getRAM().getValueAt(0);
+                short stackTop = cpu.getRAM().getValueAt(stackPointer - 1);
                 return stackTop;
             }
         }

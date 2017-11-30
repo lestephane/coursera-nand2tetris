@@ -2,9 +2,9 @@ import java.io.StringWriter;
 import java.util.function.Consumer;
 
 class VMTranslatorAssertThat {
-    private final VMTranslatorInput input;
+    private final VMTranslatorSource input;
 
-    VMTranslatorAssertThat(VMTranslatorInput input) {
+    VMTranslatorAssertThat(VMTranslatorSource input) {
         this.input = input;
     }
 
@@ -17,7 +17,7 @@ class VMTranslatorAssertThat {
 
     String translate() {
         StringWriter output = new StringWriter();
-        new VMTranslator(input.vmSourceCode()).translateTo(input.translationUnitName(), output);
+        new VMTranslator(input).translateTo(input.translationUnitName(), output);
         return output.toString();
     }
 }
