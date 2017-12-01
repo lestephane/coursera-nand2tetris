@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 if [ -f "vmtranslator/out/production/classes/VMTranslator.class" ]; then
