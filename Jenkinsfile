@@ -67,10 +67,9 @@ pipeline {
                             echo 08/ProgramFlow/FibonacciSeries/FibonacciSeries.vm
                             echo 08/FunctionCalls/SimpleFunction/SimpleFunction.vm
                             echo 08/FunctionCalls/NestedCall
+                            echo 08/FunctionCalls/FibonacciElement
+                            echo 08/FunctionCalls/StaticsTest/StaticsTest
                         }
-
-                        # 08/FunctionCalls/FibonacciElement/FibonacciElement \
-                        # 08/FunctionCalls/StaticsTest/StaticsTest \
 
                         errorcount=0
                         testsuite() {
