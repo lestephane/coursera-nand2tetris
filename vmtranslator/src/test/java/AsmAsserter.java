@@ -442,7 +442,11 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
 
     public void bootstrapsVm(String caller) {
         asm("// bootstrap vm");
-        gotoFunction("Sys.init", 0);
+        asm("@256");
+        asm("D=A");
+        asm("@0");
+        asm("M=D");
+        callsFunction(caller, "Sys.init", 0);
     }
 
     private void gotoFunction(String function, int narg) {

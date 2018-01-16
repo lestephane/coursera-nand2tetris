@@ -4,7 +4,7 @@ pipeline {
     agent { dockerfile true }
 
     options {
-        buildDiscarder(logRotator(numToKeepStr: '7'))
+        buildDiscarder(logRotator(numToKeepStr: '3'))
     }
     stages {
         stage('Init') {
