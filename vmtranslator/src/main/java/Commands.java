@@ -279,14 +279,16 @@ public class Commands {
         }
     }
 
+    /**
+     * see https://www.coursera.org/learn/nand2tetris2/lecture/7CmTb/unit-2-7-vm-implementation-on-the-hack-platform @ 07:22
+     */
     public static class BootstrapCommand implements Commands.Command {
         public void translateTo(CodeWriter o) {
             o.raw("// bootstrap vm");
-            /*o.raw("@256");
+            o.raw("@256");
             o.raw("D=A");
-            o.raw("@SP");
-            o.raw("M=D");*/
-            //new CallCommand("call Sys.init 0").translateTo(o);
+            o.raw("@0");
+            o.raw("M=D");
             o.ainstSymbol("Sys.init");
             o.jump();
         }
