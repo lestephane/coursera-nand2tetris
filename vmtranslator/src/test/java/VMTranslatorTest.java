@@ -10,7 +10,7 @@ public class VMTranslatorTest {
         return new VMTranslatorInMemoryTestBuilder(line);
     }
 
-    private VMTranslatorInMemoryTestBuilder GivenSourceCode(String ... lines) {
+    static VMTranslatorInMemoryTestBuilder GivenSourceCode(String... lines) {
         return new VMTranslatorInMemoryTestBuilder(String.join("\n", lines));
     }
 
@@ -226,7 +226,7 @@ public class VMTranslatorTest {
         GivenSourceCode("function SimpleFunction.test 3", "return")
                 .ThenTheTranslatedCommandsAre((asm) -> {
                     asm.definesFunctionWithComment("SimpleFunction.test", 3);
-                    asm.returns(3);
+                    asm.returns(0);
                 });
     }
 
@@ -262,46 +262,6 @@ public class VMTranslatorTest {
                 .HavingFileName("SomeFile")
                 .ThenTheTranslatedCommandsAre(asm -> {
                     asm.callsFunctionWithComment("SomeFile", "SomeFile.SomeFunction", 123);
-                });
-    }
-
-    @Test
-    public void ltWhereFirstEqualsSecond() {
-        GivenSourceCode("push constant 11", "push constant 11", "lt")
-                .ThenTheResultingExecutionStateIs((cpu) -> {
-                    assertThat(cpu.stack().peek(), is((short)0));
-                });
-    }
-
-    @Test
-    public void ltWhereFirstLessThanSecond() {
-        GivenSourceCode("push constant 11", "push constant 22", "lt")
-                .ThenTheResultingExecutionStateIs((cpu) -> {
-                    cpu.stack().contains(-1);
-                });
-    }
-
-    @Test
-    public void ltWhereFirstGreaterThanSecond() {
-        GivenSourceCode("push constant 22", "push constant 11", "lt")
-                .ThenTheResultingExecutionStateIs((cpu) -> {
-                    cpu.stack().contains(0);
-                });
-    }
-
-    @Test
-    public void zeroArgFunctionReturn() {
-        GivenSourceCode("call Test 0", "goto END", "function Test 1", "push constant 11", "return", "label END")
-                .ThenTheResultingExecutionStateIs((cpu) -> {
-                    cpu.stack().contains(11);
-                });
-    }
-
-    @Test
-    public void oneArgFunctionReturn() {
-        GivenSourceCode("push constant 11", "call Test 1", "goto END", "function Add22 0", "push constant 22", "add", "return", "label END", "goto END")
-                .ThenTheResultingExecutionStateIs((cpu) -> {
-                    cpu.stack().contains(33);
                 });
     }
 }

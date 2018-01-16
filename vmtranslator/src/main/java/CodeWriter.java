@@ -238,6 +238,7 @@ public class CodeWriter {
         //
         raw("@" + functionName);
         raw("0;JMP");
+        currentFunctionArgumentCount = nargs;
 
         // 2.b Define the label for the function to jump to upon return
         raw(String.format("(%s)", returnLabel));
@@ -261,7 +262,7 @@ public class CodeWriter {
      * see https://www.coursera.org/learn/nand2tetris2/lecture/zJVns/unit-2-4-function-call-and-return-implementation-preview @ 23:44
      */
     void writeFunction(String name, int nvars) {
-        beginFunction(name, nvars);
+        beginFunction(name);
         label(name);
 
         //
@@ -280,10 +281,9 @@ public class CodeWriter {
         }
     }
 
-    public void beginFunction(String functionName, int nargs) {
+    public void beginFunction(String functionName) {
         currentFunctionName = functionName;
         currentReturnOpCounter = 0;
-        currentFunctionArgumentCount = nargs;
     }
 
     public void label(String name) {
