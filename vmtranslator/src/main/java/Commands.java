@@ -289,7 +289,7 @@ public class Commands {
             o.raw("D=A");
             o.raw("@0");
             o.raw("M=D");
-            o.ainstSymbol("Sys.init");
+            o.writeCall("Sys.init", 0);
             o.jump();
         }
     }
