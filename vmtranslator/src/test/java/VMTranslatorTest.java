@@ -34,7 +34,7 @@ public class VMTranslatorTest {
     public void pushConstantTddStyle() {
         GivenSourceCode("push constant 123")
                 .ThenTheTranslatedCommandsAre((asm) -> {
-                    asm.pushesConstant(123);
+                    asm.pushesConstantWithComment(123);
                 });
     }
 
@@ -225,8 +225,8 @@ public class VMTranslatorTest {
     public void emptyFunction() {
         GivenSourceCode("function SimpleFunction.test 3", "return")
                 .ThenTheTranslatedCommandsAre((asm) -> {
-                    asm.definesFunction("SimpleFunction.test", 3);
-                    asm.returns();
+                    asm.definesFunctionWithComment("SimpleFunction.test", 3);
+                    asm.returns(3);
                 });
     }
 
@@ -234,19 +234,15 @@ public class VMTranslatorTest {
     @Test
     public void translateDirectoryOnFileSystem() throws IOException {
         GivenSourceDirectory("MultiSource")
-                .withFile(f -> f
-                        .withName("FirstSource.vm")
-                        .withLines("function First.func 0", "return"))
-                .withFile(f -> f
-                        .withName("SecondSource.vm")
-                        .withLines("function Second.func 0", "return"))
+                .withFile(f -> f.withName("FirstSource.vm").withLines("function First.func 0", "return"))
+                .withFile(f -> f.withName("SecondSource.vm").withLines("function Second.func 0", "return"))
+                .withFile(f -> f.withName("Sys.vm").withLines("function Sys.init 0", "return"))
         .ThenTheTranslatedCommandsAre((asm) -> {
-            asm.definesFunction("First.func", 0);
-            asm.returns();
-            asm.definesFunction("Second.func", 0);
-            asm.returns();
+            asm.bootstrapsVm("MultiSource");
+            asm.definesFunctionWithComment("First.func", 0); asm.returns(0);
+            asm.definesFunctionWithComment("Second.func", 0); asm.returns(0);
+            asm.definesFunctionWithComment("Sys.init", 0); asm.returns(0);
         });
-
     }
 
     @Test
@@ -254,9 +250,58 @@ public class VMTranslatorTest {
         GivenSourceFile("SingleSourceFile.vm")
                 .withLines("function First.func 0", "return")
                 .ThenTheTranslatedCommandsAre((asm) -> {
-            asm.definesFunction("First.func", 0);
-            asm.returns();
+            asm.definesFunctionWithComment("First.func", 0);
+            asm.returns(0);
         });
 
+    }
+
+    @Test
+    public void functionCall() {
+        GivenSourceCode("call SomeFile.SomeFunction 123")
+                .HavingFileName("SomeFile")
+                .ThenTheTranslatedCommandsAre(asm -> {
+                    asm.callsFunctionWithComment("SomeFile", "SomeFile.SomeFunction", 123);
+                });
+    }
+
+    @Test
+    public void ltWhereFirstEqualsSecond() {
+        GivenSourceCode("push constant 11", "push constant 11", "lt")
+                .ThenTheResultingExecutionStateIs((cpu) -> {
+                    assertThat(cpu.stack().peek(), is((short)0));
+                });
+    }
+
+    @Test
+    public void ltWhereFirstLessThanSecond() {
+        GivenSourceCode("push constant 11", "push constant 22", "lt")
+                .ThenTheResultingExecutionStateIs((cpu) -> {
+                    cpu.stack().contains(-1);
+                });
+    }
+
+    @Test
+    public void ltWhereFirstGreaterThanSecond() {
+        GivenSourceCode("push constant 22", "push constant 11", "lt")
+                .ThenTheResultingExecutionStateIs((cpu) -> {
+                    cpu.stack().contains(0);
+                });
+    }
+
+    @Test
+    public void zeroArgFunctionReturn() {
+        GivenSourceCode("call Test 0", "goto END", "function Test 1", "push constant 11", "return", "label END")
+                .ThenTheResultingExecutionStateIs((cpu) -> {
+                    cpu.stack().contains(11);
+                });
+    }
+
+    @Test
+    public void oneArgFunctionReturn() {
+        GivenSourceCode("push constant 11", "call Test 1", "goto END", "function Add22 0", "push constant 22", "add", "return", "label END", "goto END")
+                .ThenTheResultingExecutionStateIs((cpu) -> {
+                    cpu.stack().contains(33);
+                });
     }
 }

@@ -25,6 +25,10 @@ interface VMTranslatorSource {
 
     Reader open();
 
+    default boolean needsBootstrap() {
+        return false;
+    }
+
     class StringSource implements VMTranslatorSource {
         private final String name;
         private final String input;
@@ -94,6 +98,10 @@ interface VMTranslatorSource {
 
         public String translationUnitName() {
             return dir.toFile().getName();
+        }
+
+        public boolean needsBootstrap() {
+            return true;
         }
     }
 }

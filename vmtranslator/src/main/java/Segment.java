@@ -1,7 +1,6 @@
 import java.util.function.BiFunction;
 
 enum Segment {
-    PROGRAM_COUNTER("PC"),
     LOCAL("LCL"),
     ARGUMENT("ARG"),
     THAT("THAT"),

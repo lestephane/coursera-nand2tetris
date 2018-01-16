@@ -77,6 +77,8 @@ public class Parser {
             return Commands.commented(line, Commands.function(line));
         } else if (line.startsWith("return")) {
             return Commands.commented(line, new Commands.ReturnCommand());
+        } else if (line.startsWith("call")) {
+            return Commands.commented(line, new Commands.CallCommand(line));
         } else if (!line.isEmpty()){
             LOGGER.warning(()-> "unsupported: " + line);
             return Commands.comment("UNSUPPORTED: " + line);

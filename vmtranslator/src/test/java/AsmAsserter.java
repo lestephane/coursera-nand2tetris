@@ -15,8 +15,36 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
         }
     }
 
+    public void addLine(String line) {
+        add(new AsmAsserter.HackAssemblerCommandAsserter(size(), line));
+    }
+
     public void popsToLocal(int i) {
         popsToWithLeadingComment(Segment.LOCAL, i);
+    }
+
+    private void popsToWithLeadingComment(Segment segment, int i) {
+        asm("// pop " + segment.name().toLowerCase() + " " + i);
+        popsToWithoutLeadingComment(segment, i);
+    }
+
+    void asm(String expectedCode) {
+        assertTrue(String.format("expect %s at position %s of %s", expectedCode, pos, this), pos < size());
+        get(pos++).isCode(expectedCode);
+    }
+
+    private void popsToWithoutLeadingComment(Segment segment, int i) {
+        asm("@" + segment.memoryLocation(VMTranslatorInMemoryTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
+        asm(segment.usesBasePointer()? "D=M" : "D=A");
+        if (segment.usesPointerArithmetic()) {
+            asm("@" + i);
+            asm("D=D+A");
+        }
+        popToAddressPointedToByDataRegister();
+    }
+
+    private void popToAddressPointedToByDataRegister() {
+        popToAddressPointedToByDataRegisterUsingStackPointer("@SP");
     }
 
     public void popsStandardStackToArgAt(int i) {
@@ -35,15 +63,6 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
         popsToWithLeadingComment(Segment.TEMP, i);
     }
 
-    private void popsToTempWithoutLeadingComment(int i) {
-        popsToWithoutLeadingComment(Segment.TEMP, i);
-    }
-
-    private void popsToWithLeadingComment(Segment segment, int i) {
-        asm("// pop " + segment.name().toLowerCase() + " " + i);
-        popsToWithoutLeadingComment(segment, i);
-    }
-
     public void popsToStatic(int i) {
         asm("// pop static " + i);
         asm("@Junit." + i);
@@ -51,22 +70,36 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
         popToAddressPointedToByDataRegister();
     }
 
-    private void popsToWithoutLeadingComment(Segment segment, int i) {
-        asm("@" + segment.memoryLocation(VMTranslatorInMemoryTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
-        asm(segment.usesBasePointer()? "D=M" : "D=A");
-        if (segment.usesPointerArithmetic()) {
-            asm("@" + i);
-            asm("D=D+A");
-        }
-        popToAddressPointedToByDataRegister();
-    }
-
     public void pushesTempWithLeadingComment(int i) {
         pushesFromWithLeadingCommentGeneric(Segment.TEMP, i);
     }
 
-    private void pushesTempWithoutLeadingComment(int i) {
-        pushesFrom(Segment.TEMP, i);
+    private void pushesFromWithLeadingCommentGeneric(Segment segment, int i) {
+        asm("// push " + segment.name().toLowerCase() + " " + i);
+        pushesFrom(segment, i);
+    }
+
+    private void pushesFrom(Segment segment, int i) {
+        if (segment == Segment.CONSTANT) {
+            asm("@" + i);
+            asm("D=A");
+        } else {
+            asm("@" + segment.memoryLocation(VMTranslatorInMemoryTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
+            if (segment.usesPointerArithmetic()) {
+                asm(segment.usesBasePointer() ? "D=M" : "D=A");
+                asm("@" + i);
+                asm("A=D+A");
+            }
+            asm("D=M");
+        }
+        pushDataRegister();
+    }
+
+    private void pushDataRegister() {
+        asm("@SP");
+        asm("AM=M+1");
+        asm("A=A-1");
+        asm("M=D");
     }
 
     public void pushesFromThis(int i) {
@@ -93,11 +126,6 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
         pushDataRegister();
     }
 
-    private void pushesFromWithLeadingCommentGeneric(Segment segment, int i) {
-        asm("// push " + segment.name().toLowerCase() + " " + i);
-        pushesFrom(segment, i);
-    }
-
     public void pushesThis() {
         pushesFromWithLeadingCommentGeneric(Segment.POINTER, 0);
     }
@@ -114,78 +142,26 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
         popsToWithLeadingComment(Segment.POINTER, 1);
     }
 
-    public void restoresSegmentPointers() {
-        setTmp0ToMemoryOf("LCL");
-        popsTmp0StackTo("THAT");
-        popsTmp0StackTo("THIS");
-        popsTmp0StackTo("ARG");
-        popsTmp0StackTo("LCL");
-        popsTmp0StackTo("PC");
-    }
-
-    private void popsTmp0StackTo(String symbol) {
-        asm("@" + symbol);
-        asm("D=A");
-        popToAddressPointedToByDataRegisterUsingStackPointer("@5");
-    }
-
-    private void popToAddressPointedToByDataRegisterUsingStackPointer(String sp) {
-        asm("@R13");
-        asm("M=D");
-        asm(sp);
-        asm("AM=M-1");
-        asm("D=M");
-        asm("@R13");
-        asm("A=M");
-        asm("M=D");
-    }
-
-    private void popToAddressPointedToByDataRegister() {
-        popToAddressPointedToByDataRegisterUsingStackPointer("@SP");
-    }
-
-    private void setTmp0ToMemoryOf(String symbol) {
-        asm("@" + symbol);
-        asm("D=M");
-        asm("@5");
-        asm("M=D");
-    }
-
-    void pushesConstant(int i) {
+    void pushesConstantWithComment(int i) {
         asm("// push constant " + i);
-        pushesConstantWithoutLeadingComment(i);
+        pushesConstantValue(i);
     }
 
-    private void pushesConstantWithoutLeadingComment(int i) {
-        asm("@" + i);
-        asm("D=A");
+    private void pushesConstantValue(int i) {
+        pushesAt(String.valueOf(i), "A");
+    }
+
+    private void pushesAt(String symbolName, String addressingMode) {
+        asm("@" + symbolName);
+        asm("D=" + addressingMode);
         asm("@SP");
         asm("AM=M+1");
         asm("A=A-1");
         asm("M=D");
     }
 
-    private void pushesFrom(Segment segment, int i) {
-        if (segment == Segment.CONSTANT) {
-            asm("@" + i);
-            asm("D=A");
-        } else {
-            asm("@" + segment.memoryLocation(VMTranslatorInMemoryTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
-            if (segment.usesPointerArithmetic()) {
-                asm(segment.usesBasePointer() ? "D=M" : "D=A");
-                asm("@" + i);
-                asm("A=D+A");
-            }
-            asm("D=M");
-        }
-        pushDataRegister();
-    }
-
-    private void pushDataRegister() {
-        asm("@SP");
-        asm("AM=M+1");
-        asm("A=A-1");
-        asm("M=D");
+    public void pushesPointerValue(String symbolName) {
+        pushesAt(symbolName, "M");
     }
 
     public void adds() {
@@ -197,6 +173,18 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
         asm("@5");
         asm("M=D+M");
         pushesTempWithoutLeadingComment(0);
+    }
+
+    public void pushesSymbolAddress(String symbolName) {
+        pushesAt(symbolName, "A");
+    }
+
+    private void popsToTempWithoutLeadingComment(int i) {
+        popsToWithoutLeadingComment(Segment.TEMP, i);
+    }
+
+    private void pushesTempWithoutLeadingComment(int i) {
+        pushesFrom(Segment.TEMP, i);
     }
 
     public void subtracts() {
@@ -290,10 +278,6 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
         dualLogicalOp(opCounter, "OR", "|");
     }
 
-    public void addLine(String line) {
-        add(new AsmAsserter.HackAssemblerCommandAsserter(size(), line));
-    }
-
     void pushesLocal(int i) {
         final String expectedCode = "// push local " + i;
         asm(expectedCode);
@@ -308,11 +292,6 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
         asm("M=D");
     }
 
-    void asm(String expectedCode) {
-        assertTrue(String.format("expect %s at position %s of %s", expectedCode, pos, this), pos < size());
-        get(pos++).isCode(expectedCode);
-    }
-
     public void nothingLeft() {
         assertThat("there should be no asm command left", pos, is(equalTo(this.size())));
     }
@@ -320,6 +299,10 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
     public void label(String name) {
         comment("label " + name);
         labelWithoutLeadingComment(name);
+    }
+
+    void comment(String expectedComment) {
+        asm(String.format("// %s", expectedComment));
     }
 
     private void labelWithoutLeadingComment(String name) {
@@ -341,45 +324,130 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
         asm("0;JMP");
     }
 
-    void comment(String expectedComment) {
-        asm(String.format("// %s", expectedComment));
+    public void definesFunctionWithComment(String name, int nvars) {
+        comment("function %s %s", name, nvars);
+        labelWithoutLeadingComment(name);
+
+        // sets up the local segment (LCL = SP)
+        asm("@SP");
+        asm("D=M");
+        asm("@LCL");
+        asm("M=D");
+
+        // pushes zero for each local var (shifts SP by one for each additional local var)
+        for (int i = 0; i < nvars; i++) {
+            pushesConstantValue(0);
+        }
+    }
+
+    public void callsFunctionWithComment(String caller, String callee, int nargs) {
+        comment("call " + callee + " " + nargs);
+        callsFunction(caller, callee, nargs);
+    }
+
+    private void callsFunction(String caller, String callee, int nargs) {
+        // Computes ARG pointer and saves it to temp register
+        asm("@" + nargs);
+        asm("D=A");
+        asm("@SP");
+        asm("D=M-D");
+        asm("@R13");
+        asm("M=D");
+
+        // Pushes caller's frame
+        final String returnLabel = caller + "$ret.0";
+        pushesSymbolAddress(returnLabel);
+        pushesPointerValue("LCL");
+        pushesPointerValue("ARG");
+        pushesPointerValue("THIS");
+        pushesPointerValue("THAT");
+
+        // Sets arg pointer
+        asm("@R13");
+        asm("D=M");
+        asm("@ARG");
+        asm("M=D");
+
+        // Jumps to callee
+        asm("@" + callee);
+        asm("0;JMP");
+
+        // Declares label for callee to return to
+        asm("(" +returnLabel + ")");
     }
 
     private void comment(String format, Object ... varargs) {
         comment(String.format(format, varargs));
     }
 
-    public void setStandardStackPointerToAddressOfArg1() {
-        asm("@ARG");
-        asm("A=M+1");
+    // https://www.coursera.org/learn/nand2tetris2/lecture/zJVns/unit-2-4-function-call-and-return-implementation-preview (@ 13:58)
+    void returns(int nargs) {
+        comment("return");
+
+        //
+        // Save return address to @R13
+        // otherwise it gets overriden when nargs = 0 (in that case, ARG[0] holds the return address)
+        //
+        asm("@" + nargs);
         asm("D=A");
+        asm("@ARG");
+        asm("A=M+D");
+        asm("D=M");
+        asm("@R13");
+        asm("M=D");
+
+        // Save return value (pop from stack) to ARG 0
+        popsToWithoutLeadingComment(Segment.ARGUMENT, 0);
+
+        // Restore stack pointer to ARG[1] so that the top of the stack (ARG[0]) is the return value...
+        asm("@ARG");
+        asm("D=M+1");
         asm("@SP");
+        asm("M=D");
+
+        // ... restore other segment pointers as a last step
+        popsLclStackTo("THAT");
+        popsLclStackTo("THIS");
+        popsLclStackTo("ARG");
+        popsLclStackTo("LCL");
+
+        // Jump the return address saved earlier in R13
+        asm("@R13");
+        asm("A=M");
+        asm("0;JMP");
+    }
+
+    private void popsLclStackTo(String symbol) {
+        asm("@" + symbol);
+        asm("D=A");
+        popToAddressPointedToByDataRegisterUsingStackPointer("@LCL");
+    }
+
+    private void popToAddressPointedToByDataRegisterUsingStackPointer(String sp) {
+        asm("@R14");
+        asm("M=D");
+        asm(sp);
+        asm("AM=M-1");
+        asm("D=M");
+        asm("@R14");
+        asm("A=M");
         asm("M=D");
     }
 
-    public void definesFunction(String name, int nargs) {
-        comment("function %s %s", name, nargs);
-        labelWithoutLeadingComment(name);
-        for (int i = 0; i < nargs; i++) {
-            pushesConstantWithoutLeadingComment(0);
-        }
+    private void jumpsToProgramCounterAddress() {
+        asm("@PC");
+        asm("A=M");
+        asm("0;JMP");
     }
 
-    //
-    // https://www.coursera.org/learn/nand2tetris2/lecture/zJVns/unit-2-4-function-call-and-return-implementation-preview (@ 13:58)
-    //
-    void returns() {
-        comment("return");
+    public void bootstrapsVm(String caller) {
+        asm("// bootstrap vm");
+        gotoFunction("Sys.init", 0);
+    }
 
-        // 1. the function's return value is transferred to arg[0]
-        popsToWithoutLeadingComment(Segment.ARGUMENT, 0);
-
-        // 3. clear the stack (set it to the correct value from the point of view of the caller)
-        //    (needs to be done out of step with 2. because after 2. the ARG pointer will be clobbered.
-        setStandardStackPointerToAddressOfArg1();
-
-        // 2. restore the segment pointers of the caller
-        restoresSegmentPointers();
+    private void gotoFunction(String function, int narg) {
+        asm("@" + function);
+        asm("0;JMP");
     }
 
     class HackAssemblerCommandAsserter {

@@ -253,36 +253,42 @@ public class Commands {
             this.nargs = Integer.parseInt(parts[2]);
         }
 
-        public void translateTo(CodeWriter o) throws IOException {
-            o.label(name);
-            for (int i = 0; i < nargs; i++) {
-                o.push(Segment.CONSTANT, 0);
-            }
+        public void translateTo(CodeWriter o) {
+            o.writeFunction(name, nargs);
         }
     }
 
     public static class ReturnCommand implements Command {
-        public void translateTo(CodeWriter o) throws IOException {
-            //popsToWithoutLeadingComment(Segment.ARGUMENT, 0);
-            o.pop(Segment.ARGUMENT, 0);
-            // setStandardStackPointerToAddressOfArg(1);
-            o.atSegment(Segment.ARGUMENT);
-            o.assignMemoryPlusOneToAddressRegister();
-            o.assignAddressRegisterToDataRegister();
-            o.ainstSymbol("SP");
-            o.assignDataRegisterToMemory();
-            // setTmp0ToMemoryOf("LCL");
-            o.atSegment(Segment.LOCAL);
-            o.assignMemoryToDataRegister();
-            o.atTemp(0);
-            o.assignDataRegisterToMemory();
-            // popsTmp0StackTo("THAT");
-            final String tmp0 = Segment.TEMP.memoryLocation(null, -1);
-            o.popUsingBasePointer(tmp0, Segment.POINTER, 1); // restore THAT
-            o.popUsingBasePointer(tmp0, Segment.POINTER, 0); // restore THIS
-            o.popUsingBasePointer(tmp0, Segment.ARGUMENT);
-            o.popUsingBasePointer(tmp0, Segment.LOCAL);
-            o.popUsingBasePointer(tmp0, Segment.PROGRAM_COUNTER);
+        public void translateTo(CodeWriter o) {
+            o.writeReturn();
+        }
+    }
+
+    public static class CallCommand implements Command {
+        private final String name;
+        private final int nargs;
+
+        public CallCommand(String line) {
+            final String[] parts = line.split(" ");
+            this.name = parts[1];
+            this.nargs = Integer.parseInt(parts[2]);
+        }
+
+        public void translateTo(CodeWriter o) {
+            o.writeCall(name, nargs);
+        }
+    }
+
+    public static class BootstrapCommand implements Commands.Command {
+        public void translateTo(CodeWriter o) {
+            o.raw("// bootstrap vm");
+            /*o.raw("@256");
+            o.raw("D=A");
+            o.raw("@SP");
+            o.raw("M=D");*/
+            //new CallCommand("call Sys.init 0").translateTo(o);
+            o.ainstSymbol("Sys.init");
+            o.jump();
         }
     }
 }

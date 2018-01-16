@@ -85,6 +85,9 @@ public class VMTranslator {
 
     private void forEachCommand(Consumer<Commands.Command> cmd) {
         Parser parser = new Parser(new BufferedReader(input.open()));
+        if (input.needsBootstrap()) {
+            cmd.accept(new Commands.BootstrapCommand());
+        }
         while (parser.hasMoreCommands()) {
             Commands.Command c = parser.command();
             if (c != null) {

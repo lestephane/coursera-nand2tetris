@@ -12,6 +12,9 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 class VMTranslatorInMemoryTestBuilder {
     public static final String DEFAULT_TEST_COMPILATION_UNIT_NAME = "Junit";
     private String fileName = DEFAULT_TEST_COMPILATION_UNIT_NAME + ".vm";
@@ -67,8 +70,10 @@ class VMTranslatorInMemoryTestBuilder {
             initializeSegmentPointers(cpu);
             rom.loadProgram(tmpFile.getFile().toAbsolutePath().toString());
             while (rom.getValueAt(cpu.getPC().get()) != HackAssemblerTranslator.NOP) {
+                System.out.println("executing instruction at PC " + cpu.getPC().get());
                 cpu.executeInstruction();
             }
+            System.out.println("stopping execution at PC " + cpu.getPC().get());
             execConsumer.accept(new CpuAsserter(cpu, rom));
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
@@ -119,9 +124,30 @@ class VMTranslatorInMemoryTestBuilder {
 
         public class StackAsserter {
             public short peek() {
-                short stackPointer = cpu.getRAM().getValueAt(0);
+                short stackPointer = pointer();
                 short stackTop = cpu.getRAM().getValueAt(stackPointer - 1);
                 return stackTop;
+            }
+
+            public short pointer() {
+                return cpu.getRAM().getValueAt(0);
+            }
+
+            public short[] contents() {
+                return Arrays.copyOfRange(cpu.getRAM().getContents(), 256, pointer());
+            }
+
+            public void contains(int ... values) {
+                assertThat(contents(), is(arrayOf(values)));
+            }
+
+            private short[] arrayOf(int ... val) {
+                short inShort[] = new short[val.length];
+                for(int i = 0; i < inShort.length; i++)
+                {
+                    inShort[i] = (short)val[i];
+                }
+                return inShort;
             }
         }
     }
