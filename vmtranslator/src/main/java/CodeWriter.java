@@ -290,6 +290,9 @@ public class CodeWriter {
         output.println(String.format("(%s)", name));
     }
 
+    /**
+     * see https://www.coursera.org/learn/nand2tetris2/lecture/gxfcB/unit-2-6-function-call-and-return-implementation
+     */
     void writeReturn() {
         // save return address to avoid clobbering
         raw("@" + currentFunctionArgumentCount());

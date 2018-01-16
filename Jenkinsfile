@@ -68,7 +68,7 @@ pipeline {
                             echo 08/FunctionCalls/SimpleFunction/SimpleFunction.vm
                             echo 08/FunctionCalls/NestedCall
                             echo 08/FunctionCalls/FibonacciElement
-                            echo 08/FunctionCalls/StaticsTest/StaticsTest
+                            echo 08/FunctionCalls/StaticsTest
                         }
 
                         errorcount=0
