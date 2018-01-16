@@ -5,13 +5,13 @@ import java.io.IOException;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-public class VMTranslatorTest {
-    private VMTranslatorInMemoryTestBuilder GivenSourceCode(String line) {
-        return new VMTranslatorInMemoryTestBuilder(line);
+public class TranslatorTranslationTests {
+    private MemoryBasedTranslatorTestBuilder GivenSourceCode(String line) {
+        return new MemoryBasedTranslatorTestBuilder(line);
     }
 
-    static VMTranslatorInMemoryTestBuilder GivenSourceCode(String... lines) {
-        return new VMTranslatorInMemoryTestBuilder(String.join("\n", lines));
+    static MemoryBasedTranslatorTestBuilder GivenSourceCode(String... lines) {
+        return new MemoryBasedTranslatorTestBuilder(String.join("\n", lines));
     }
 
     private VMTranslatorSingleFileTestBuilder GivenSourceFile(String name) {

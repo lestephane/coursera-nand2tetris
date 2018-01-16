@@ -34,7 +34,7 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
     }
 
     private void popsToWithoutLeadingComment(Segment segment, int i) {
-        asm("@" + segment.memoryLocation(VMTranslatorInMemoryTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
+        asm("@" + segment.memoryLocation(MemoryBasedTranslatorTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
         asm(segment.usesBasePointer()? "D=M" : "D=A");
         if (segment.usesPointerArithmetic()) {
             asm("@" + i);
@@ -84,7 +84,7 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
             asm("@" + i);
             asm("D=A");
         } else {
-            asm("@" + segment.memoryLocation(VMTranslatorInMemoryTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
+            asm("@" + segment.memoryLocation(MemoryBasedTranslatorTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME, i));
             if (segment.usesPointerArithmetic()) {
                 asm(segment.usesBasePointer() ? "D=M" : "D=A");
                 asm("@" + i);
@@ -115,7 +115,7 @@ public class AsmAsserter extends ArrayList<AsmAsserter.HackAssemblerCommandAsser
     }
 
     public void pushFromStatic(int i) {
-        final String compilationUnitName = VMTranslatorInMemoryTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME;
+        final String compilationUnitName = MemoryBasedTranslatorTestBuilder.DEFAULT_TEST_COMPILATION_UNIT_NAME;
         pushCompilationNameScopedStatic(compilationUnitName, i);
     }
 

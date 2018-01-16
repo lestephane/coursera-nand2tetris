@@ -50,13 +50,17 @@ public class TestDirectoryBuilder {
         return this;
     }
 
-    public Path build() throws IOException {
-        Path testDirectory = enclosingDirectory.resolve(name);
-        Files.createDirectory(testDirectory);
-        for (TestFileBuilder f: testFiles) {
-            f.build();
+    public Path build() {
+        try {
+            Path testDirectory = enclosingDirectory.resolve(name);
+            Files.createDirectory(testDirectory);
+            for (TestFileBuilder f: testFiles) {
+                f.build();
+            }
+            return testDirectory;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-        return testDirectory;
     }
 
     public static Path enclosingDirectory() {
